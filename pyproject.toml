@@ -3,15 +3,15 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "pdffile"
-version = "0.1.0"
+name = "comicbox-pdffile"
+version = "0.1.1"
 description = ""
 license = "GPL-3.0-only"
 authors = ["AJ Slater <aj@slater.net>"]
 readme = "README.md"
-homepage = "https://github.com/ajslater/"
-repository = "https://github.com/ajslater/"
-documentation = "https://github.com/ajslater/"
+homepage = "https://github.com/ajslater/comicbox-pdffile"
+repository = "https://github.com/ajslater/comicbox-pdffile"
+documentation = "https://github.com/ajslater/comicbox-pdffile"
 keywords = []
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -65,7 +65,7 @@ ignore-words-list = 'thead,ro,jupyter,coverd,searched,ws'
 directory = "test-results/coverage"
 
 [tool.coverage.run]
-source = [""]
+source = ["."]
 branch = true
 concurrency = ["multiprocessing"]
 omit = [
@@ -103,7 +103,6 @@ pythonPlatform = "All"
 
 [tool.pytest.ini_options]
 junit_family = "xunit2"
-asyncio_mode = "strict"
 # --black
 addopts = """
     --junit-xml=test-results/pytest/results.xml
