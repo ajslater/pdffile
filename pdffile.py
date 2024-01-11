@@ -4,8 +4,8 @@ from logging import getLogger
 from pathlib import Path
 from zipfile import ZipInfo
 
+import fitz
 from filetype import guess
-from fitz_new import fitz
 
 LOG = getLogger(__name__)
 

@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "comicbox-pdffile"
-version = "0.1.1"
+version = "0.1.2"
 description = ""
 license = "GPL-3.0-only"
 authors = ["AJ Slater <aj@slater.net>"]
@@ -27,10 +27,9 @@ include = []
 [tool.poetry.dependencies]
 python = "^3.9"
 filetype = "^1.2.0"
-pymupdf = "^1.23.8"
+pymupdf = "^1.23.9"
 
 [tool.poetry.group.dev.dependencies]
-neovim = "^0.3.1"
 wheel = "^0.42.0"
 
 [tool.poetry.group.test.dependencies]
@@ -50,8 +49,8 @@ vulture = "^2.3"
 
 #prog = "prog.run:main"
 [tool.poetry.urls]
-"News" = "https://github.com/ajslater/pdffile"
-"Report Issues" = "https://github.com/ajslater/pdffile/issues"
+"News" = "https://github.com/ajslater/comicbox-pdffile"
+"Report Issues" = "https://github.com/ajslater/comicbox-pdffile/issues"
 
 [tool.codespell]
 skip = './cache,./dist,./test-results,.git,.mypy_cache,.pytest_cache,.venv*,node_modules,package-lock.json,poetry.lock,run.spec'
@@ -103,7 +102,6 @@ pythonPlatform = "All"
 
 [tool.pytest.ini_options]
 junit_family = "xunit2"
-# --black
 addopts = """
     --junit-xml=test-results/pytest/results.xml
     -ra
