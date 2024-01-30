@@ -1,5 +1,6 @@
 """Access PDFS with a ZipFile-like API."""
 import math
+from collections.abc import Mapping
 from logging import getLogger
 from pathlib import Path
 from zipfile import ZipInfo
@@ -13,40 +14,46 @@ LOG = getLogger(__name__)
 class PDFFile:
     """ZipFile like API to PDFs."""
 
-    MIME_TYPE = "application/pdf"
-    SUFFIX = ".pdf"
-    _TMP_SUFFIX = ".comicbox_tmp_pdf"
-    _DEFAULT_PAGE_COUNT = 100
-    _METADATA_COPY_KEYS = ("format", "encryption", "creationDate", "modDate", "trapped")
+    MIME_TYPE: str = "application/pdf"
+    SUFFIX: str = ".pdf"
+    _TMP_SUFFIX: str = ".comicbox_tmp_pdf"
+    _DEFAULT_PAGE_COUNT: int = 100
+    _METADATA_COPY_KEYS: tuple[str, ...] = (
+        "format",
+        "encryption",
+        "creationDate",
+        "modDate",
+        "trapped",
+    )
 
     @classmethod
-    def is_pdffile(cls, path):
+    def is_pdffile(cls, path: str) -> bool:
         """Is the path a pdf."""
         if Path(path).suffix.lower() == cls.SUFFIX:
             return True
         kind = guess(path)  # type: ignore
-        return kind and kind.mime == cls.MIME_TYPE
+        return bool(kind and kind.mime == cls.MIME_TYPE)
 
-    def __init__(self, path):
+    def __init__(self, path: Path) -> None:
         """Initialize document."""
-        self._path = path
-        self._doc = fitz.Document(self._path)  # type: ignore
+        self._path: Path = path
+        self._doc: fitz.Document = fitz.Document(self._path)  # type: ignore
 
     def __enter__(self):
         """Context enter."""
         return self
 
-    def __exit__(self, *_args):
+    def __exit__(self, *_args) -> None:
         """Context close."""
         self.close()
 
-    def namelist(self):
+    def namelist(self) -> list[str]:
         """Return sortable zero padded index strings."""
         page_count = self.get_page_count()
         zero_pad = math.floor(math.log10(page_count)) + 1
         return [f"{i:0{zero_pad}}" for i in range(page_count)]
 
-    def infolist(self):
+    def infolist(self) -> list[ZipInfo]:
         """Return ZipFile like infolist."""
         infos = []
         for index in self.namelist():
@@ -54,7 +61,7 @@ class PDFFile:
             infos.append(info)
         return infos
 
-    def read(self, filename, to_pixmap=False):
+    def read(self, filename: str, to_pixmap: bool = False) -> bytes:
         """Return a single page pdf doc or pixmap."""
         index = int(filename)
 
@@ -65,12 +72,12 @@ class PDFFile:
             page_bytes = self._doc.convert_to_pdf(index, index)
         return page_bytes
 
-    def close(self):
+    def close(self) -> None:
         """Close the fitz doc."""
         if self._doc:
             self._doc.close()
 
-    def get_page_count(self):
+    def get_page_count(self) -> int:
         """Get the page count from the doc or the default highnum."""
         try:
             page_count = self._doc.page_count
@@ -79,14 +86,14 @@ class PDFFile:
             page_count = self._DEFAULT_PAGE_COUNT
         return page_count
 
-    def get_metadata(self):
+    def get_metadata(self) -> dict:
         """Return metadata from the pdf doc."""
         md = self._doc.metadata
         if not md:
             md = {}
         return md
 
-    def _get_preserved_metadata(self):
+    def _get_preserved_metadata(self) -> dict:
         """Get preserved metadata."""
         old_metadata = {}
         if self._doc.metadata:
@@ -95,7 +102,7 @@ class PDFFile:
                     old_metadata[key] = value
         return old_metadata
 
-    def save_metadata(self, metadata):
+    def save_metadata(self, metadata: Mapping) -> None:
         """Set metadata to the pdf doc."""
         preserved_metadata = self._get_preserved_metadata()
         new_metadata = {
