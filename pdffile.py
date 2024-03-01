@@ -1,4 +1,5 @@
 """Access PDFS with a ZipFile-like API."""
+
 import math
 from collections.abc import Mapping
 from logging import getLogger
