@@ -1,5 +1,9 @@
 # 📰 PDFFile News
 
+## v0.1.5
+
+- Support Python 3.9
+
 ## v0.1.4
 
 - Require Python 3.10

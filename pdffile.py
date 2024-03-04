@@ -1,12 +1,18 @@
 """Access PDFS with a ZipFile-like API."""
+
+from __future__ import annotations
+
 import math
-from collections.abc import Mapping
 from logging import getLogger
 from pathlib import Path
+from typing import TYPE_CHECKING
 from zipfile import ZipInfo
 
 import fitz
 from filetype import guess
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 LOG = getLogger(__name__)
 
