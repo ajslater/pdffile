@@ -1,11 +1,13 @@
 import { FlatCompat } from "@eslint/eslintrc";
 import js from "@eslint/js";
 import arrayFunc from "eslint-plugin-array-func";
+import markdown from "eslint-plugin-markdown";
 // import plugin broken for flag config
 // https://github.com/import-js/eslint-plugin-import/issues/2556
 // import importPlugin from "eslint-plugin-import";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 import pluginSecurity from "eslint-plugin-security";
+import eslintPluginToml from "eslint-plugin-toml";
 import eslintPluginUnicorn from "eslint-plugin-unicorn";
 import globals from "globals";
 
@@ -24,7 +26,11 @@ export default [
     },
     plugins: {
       // import: importPlugin,
+      arrayFunc,
+      markdown,
+      security: pluginSecurity,
       unicorn: eslintPluginUnicorn,
+      toml: eslintPluginToml,
     },
     rules: {
       "array-func/prefer-array-from": "off", // for modern browsers the spread operator, as preferred by unicorn, works fine.
@@ -44,33 +50,41 @@ export default [
         "error",
         { case: "kebabCase", ignore: [".*.md"] },
       ],
-      /*
-     ...importPlugin.configs["recommended"].rules,
-     "import/no-unresolved": [
-       "error",
-       {
-         ignore: ["^[@]"],
-       },
-     ],
-     */
     },
-    /*
-    settings: {
-      "import/parsers": {
-        espree: [".js", ".cjs", ".mjs", ".jsx"],
-        "@typescript-eslint/parser": [".ts"],
-      },
-      "import/resolver": {
-        typescript: true, 
-        node: true,
-      },
-    },
-     */
   },
+  ...markdown.configs.recommended,
+  ...eslintPluginToml.configs["flat/recommended"],
   js.configs.recommended,
   arrayFunc.configs.all,
   pluginSecurity.configs.recommended,
   eslintPluginPrettierRecommended,
+  {
+    files: ["**/*.md"],
+    processor: "markdown/markdown",
+    rules: {
+      "prettier/prettier": ["warn", { parser: "markdown" }],
+    },
+  },
+  {
+    files: ["**/*.md/*.js"], // Will match js code inside *.md files
+    rules: {
+      "no-unused-vars": "off",
+      "no-undef": "off",
+    },
+  },
+  {
+    files: ["**/*.md/*.sh"],
+    rules: {
+      "prettier/prettier": ["error", { parser: "sh" }],
+    },
+  },
+  {
+    files: ["*.toml"],
+    //parser: "toml-eslint-parser",
+    rules: {
+      "prettier/prettier": ["error", { parser: "toml" }],
+    },
+  },
   ...compat.config({
     root: true,
     env: {
@@ -81,8 +95,6 @@ export default [
     extends: [
       // LANGS
       "plugin:jsonc/recommended-with-jsonc",
-      "plugin:markdown/recommended",
-      "plugin:toml/recommended",
       "plugin:yml/standard",
       "plugin:yml/prettier",
       // CODE QUALITY
@@ -99,37 +111,10 @@ export default [
     ],
     overrides: [
       {
-        files: ["**/*.md"],
-        processor: "markdown/markdown",
-        rules: {
-          "prettier/prettier": ["warn", { parser: "markdown" }],
-        },
-      },
-      {
-        files: ["**/*.md/*.js"], // Will match js code inside *.md files
-        rules: {
-          "no-unused-vars": "off",
-          "no-undef": "off",
-        },
-      },
-      {
-        files: ["**/*.md/*.sh"],
-        rules: {
-          "prettier/prettier": ["error", { parser: "sh" }],
-        },
-      },
-      {
         files: ["*.yaml", "*.yml"],
         //parser: "yaml-eslint-parser",
         rules: {
           "unicorn/filename-case": "off",
-        },
-      },
-      {
-        files: ["*.toml"],
-        //parser: "toml-eslint-parser",
-        rules: {
-          "prettier/prettier": ["error", { parser: "toml" }],
         },
       },
       {
@@ -146,7 +131,6 @@ export default [
     plugins: [
       "eslint-comments",
       //"import",
-      "markdown",
       "no-constructor-bind",
       "no-secrets",
       "no-unsanitized",
@@ -179,6 +163,7 @@ export default [
       "dist",
       "node_modules",
       "package-lock.json",
+      "poetry.lock",
       "test-results",
       "typings",
     ],
