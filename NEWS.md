@@ -1,5 +1,9 @@
 # 📰 PDFFile News
 
+## v0.1.6
+
+- pymupdf 1.24.0
+
 ## v0.1.5
 
 - Support Python 3.9
