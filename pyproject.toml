@@ -27,10 +27,10 @@ include = []
 [tool.poetry.dependencies]
 python = "^3.9"
 filetype = "^1.2.0"
-pymupdf = "^1.23.9"
+pymupdf = "^1.24.0"
 
 [tool.poetry.group.dev.dependencies]
-wheel = "^0.42.0"
+wheel = "^0.43.0"
 
 [tool.poetry.group.test.dependencies]
 coverage = { extras = ["toml"], version = "^7.0" }
