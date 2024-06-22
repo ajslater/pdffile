@@ -1,5 +1,9 @@
 # 📰 PDFFile News
 
+## v0.1.7
+
+- Dependency security update
+
 ## v0.1.6
 
 - pymupdf 1.24.0
