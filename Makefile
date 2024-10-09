@@ -7,6 +7,8 @@
 ## Install for production
 ## @category Install
 install-prod: install-deps
+	pip install --upgrade pip
+	pip install --upgrade poetry
 	poetry install --no-root --only-root
 	npm install
 
