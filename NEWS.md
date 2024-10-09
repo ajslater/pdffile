@@ -1,5 +1,9 @@
 # 📰 PDFFile News
 
+## v0.1.8
+
+- Build with circleci
+
 ## v0.1.7
 
 - Dependency security update
