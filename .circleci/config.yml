@@ -1,0 +1,60 @@
+jobs:
+  build:
+    machine:
+      image: ubuntu-2404:current
+    environment:
+      DOCKER_CLI_EXPERIMENTAL: enabled
+      DOCKER_BUILDKIT: 1
+    steps:
+      - checkout
+      - run:
+          command: docker compose build pdffile-builder
+          name: Build Builder
+      - run:
+          command: ./bin/docker-compose-exit.sh pdffile-lint
+          name: Comicbox Lint
+      - run:
+          command: ./bin/docker-compose-exit.sh pdffile-test
+          name: Comicbox Test
+      - store_test_results:
+          path: test-results/pytest
+      - store_artifacts:
+          path: test-results/coverage
+      - run:
+          command: ./bin/docker-compose-exit.sh pdffile-build
+          name: Build PDFFile Dist
+      - persist_to_workspace:
+          paths:
+            - ./README.md
+            - ./bin
+            - ./dist
+            - ./pyproject.toml
+          root: .
+  deploy:
+    docker:
+      - image: cimg/python:3.12.7
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          command: ./bin/publish-pypi.sh
+version: 2.1
+workflows:
+  main:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only:
+                - develop
+                - main
+                - pre-release
+      - deploy:
+          filters:
+            branches:
+              only:
+                - main
+                - pre-release
+          requires:
+            - build
+  version: 2.1
