@@ -1,0 +1,21 @@
+services:
+  pdffile-builder:
+    build: .
+    image: pdffile-builder
+    container_name: pdffile-builder
+  pdffile-lint:
+    image: pdffile-builder
+    container_name: pdffile-lint
+    command: make lint
+  pdffile-test:
+    image: pdffile-builder
+    container_name: pdffile-test
+    command: make test
+    volumes:
+      - ./test-results/:/app/test-results/
+  pdffile-build:
+    image: pdffile-builder
+    container_name: pdffile-build
+    volumes:
+      - ./dist/:/app/dist/
+    command: poetry build
