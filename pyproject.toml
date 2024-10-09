@@ -53,7 +53,7 @@ vulture = "^2.3"
 "Report Issues" = "https://github.com/ajslater/comicbox-pdffile/issues"
 
 [tool.codespell]
-skip = './cache,./dist,./test-results,.git,.mypy_cache,.pytest_cache,.venv*,node_modules,package-lock.json,poetry.lock,run.spec'
+skip = './cache,./dist,./test-results,.git,.mypy_cache,.pytest_cache,.venv*,node_modules,package-lock.json,poetry.lock,run.spec,*.pdf'
 builtin = 'clear,rare,code'
 check-hidden = true
 # Remove 'coverd' when this issue is resolved
