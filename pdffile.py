@@ -37,13 +37,13 @@ class PDFFile:
         """Is the path a pdf."""
         if Path(path).suffix.lower() == cls.SUFFIX:
             return True
-        kind = guess(path)  # type: ignore
+        kind = guess(path)
         return bool(kind and kind.mime == cls.MIME_TYPE)
 
     def __init__(self, path: Path) -> None:
         """Initialize document."""
         self._path: Path = path
-        self._doc: fitz.Document = fitz.Document(self._path)  # type: ignore
+        self._doc: fitz.Document = fitz.Document(self._path)
 
     def __enter__(self):
         """Context enter."""
@@ -67,12 +67,12 @@ class PDFFile:
             infos.append(info)
         return infos
 
-    def read(self, filename: str, to_pixmap: bool = False) -> bytes:
+    def read(self, filename: str, to_pixmap: bool = False) -> bytes:  # noqa: FBT002
         """Return a single page pdf doc or pixmap."""
         index = int(filename)
 
         if to_pixmap:
-            pix = self._doc.get_page_pixmap(index)  # type: ignore
+            pix = self._doc.get_page_pixmap(index)  # type: ignore[reportAttributeAccessIssue]
             page_bytes = pix.tobytes(output="ppm")
         else:
             page_bytes = self._doc.convert_to_pdf(index, index)
@@ -115,7 +115,7 @@ class PDFFile:
             **preserved_metadata,
             **metadata,
         }
-        self._doc.set_metadata(new_metadata)  # type: ignore
+        self._doc.set_metadata(new_metadata)  # type: ignore[reportAttributeAccessIssue]
 
         tmp_path = self._path.with_suffix(self._TMP_SUFFIX)
         self._doc.save(
@@ -124,7 +124,7 @@ class PDFFile:
             deflate=True,
             deflate_images=False,
             deflate_fonts=True,
-            encryption=fitz.PDF_ENCRYPT_KEEP,  # type: ignore
+            encryption=fitz.PDF_ENCRYPT_KEEP,  # type: ignore[reportAttributeAccessIssue]
             linear=True,
             pretty=True,
             no_new_id=True,
