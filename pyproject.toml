@@ -97,7 +97,7 @@ exclude = [
 useLibraryCodeForTypes = true
 reportMissingImports = true
 reportImportCycles = true
-pythonVersion = "3.10"
+pythonVersion = "3.9"
 pythonPlatform = "All"
 
 [tool.pytest.ini_options]
@@ -119,7 +119,7 @@ exclude = "*~,.git/*,.mypy_cache/*,.pytest_cache/*,.venv*,__pycache__/*,cache/*,
 
 [tool.ruff]
 extend-exclude = ["typings"]
-target-version = "py310"
+target-version = "py39"
 
 [tool.ruff.lint]
 extend-ignore = [
