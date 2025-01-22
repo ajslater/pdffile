@@ -47,7 +47,7 @@ vulture = "^2.3"
 
 [tool.poetry.scripts]
 
-#prog = "prog.run:main"
+# prog = "prog.run:main"
 [tool.poetry.urls]
 "News" = "https://github.com/ajslater/comicbox-pdffile"
 "Report Issues" = "https://github.com/ajslater/comicbox-pdffile/issues"

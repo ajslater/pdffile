@@ -1,15 +1,15 @@
 import eslintJs from "@eslint/js";
 import eslintJson from "@eslint/json";
-import eslintMarkdown from "@eslint/markdown";
 import eslintPluginComments from "@eslint-community/eslint-plugin-eslint-comments/configs";
+import eslintPluginStylistic from "@stylistic/eslint-plugin";
 import eslintConfigPrettier from "eslint-config-prettier";
 import eslintPluginArrayFunc from "eslint-plugin-array-func";
 import eslintPluginCompat from "eslint-plugin-compat";
 import eslintPluginDepend from "eslint-plugin-depend";
 import eslintPluginImport from "eslint-plugin-import";
+import * as eslintPluginMdx from "eslint-plugin-mdx";
 import eslintPluginNoSecrets from "eslint-plugin-no-secrets";
 import eslintPluginNoUnsanitized from "eslint-plugin-no-unsanitized";
-import eslintPluginPrettier from "eslint-plugin-prettier";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 import eslintPluginPromise from "eslint-plugin-promise";
 import eslintPluginRegexp from "eslint-plugin-regexp";
@@ -21,10 +21,11 @@ import eslintPluginUnicorn from "eslint-plugin-unicorn";
 import eslintPluginYml from "eslint-plugin-yml";
 import globals from "globals";
 
+export const FLAT_ALL = "flat/all";
 export const FLAT_BASE = "flat/base";
 export const FLAT_RECOMMENDED = "flat/recommended";
 
-export const configs = {
+export const CONFIGS = {
   js: {
     ...eslintJs.configs.recommended,
     ...eslintPluginArrayFunc.configs.all,
@@ -36,12 +37,12 @@ export const configs = {
     ...eslintPluginPromise.configs[FLAT_RECOMMENDED],
     ...eslintPluginRegexp.configs[FLAT_RECOMMENDED],
     ...eslintPluginSonarjs.configs.recommended,
+    // ...eslintPluginUnicorn.configs[FLAT_ALL],
     plugins: {
-      arrayFunc: eslintPluginArrayFunc,
       depend: eslintPluginDepend,
       "no-secrets": eslintPluginNoSecrets,
-      promise: eslintPluginPromise,
       "simple-import-sort": eslintPluginSimpleImportSort,
+      sonarjs: eslintPluginSonarjs,
       unicorn: eslintPluginUnicorn,
     },
     languageOptions: {
@@ -65,6 +66,7 @@ export const configs = {
       "simple-import-sort/exports": "warn",
       "simple-import-sort/imports": "warn",
       "space-before-function-paren": "off",
+      ...eslintPluginUnicorn.configs[FLAT_RECOMMENDED].rules,
       "unicorn/filename-case": [
         "error",
         { case: "kebabCase", ignore: [".*.md"] },
@@ -75,6 +77,7 @@ export const configs = {
     },
   },
 };
+Object.freeze(CONFIGS);
 
 export default [
   {
@@ -85,9 +88,7 @@ export default [
       "**/*min.js",
       "*~",
       ".git/",
-      ".mypy_cache/",
-      ".pytest_cache/",
-      ".ruff_cache/",
+      ".*cache/",
       ".venv/",
       "dist/",
       "node_modules/",
@@ -99,19 +100,15 @@ export default [
   },
   eslintPluginPrettierRecommended,
   eslintPluginSecurity.configs.recommended,
+  eslintPluginStylistic.configs["all-flat"],
   {
     languageOptions: {
       globals: {
         ...globals.node,
-        ...globals.browser,
       },
     },
     linterOptions: {
       reportUnusedDisableDirectives: "warn",
-    },
-    plugins: {
-      prettier: eslintPluginPrettier,
-      security: eslintPluginSecurity,
     },
     rules: {
       "prettier/prettier": "warn",
@@ -119,20 +116,34 @@ export default [
   },
   {
     files: ["**/*.js"],
-    ...configs.js,
+    ...CONFIGS.js,
   },
   {
-    files: ["*.json", "**/*.json"],
+    files: ["**/*.json", "**/*.md/*.json"],
+    plugins: {
+      json: eslintJson,
+    },
     ...eslintJson.configs.recommended,
     language: "json/json",
   },
   {
-    files: ["*.md", "**/*.md"],
-    language: "markdown/gfm",
-    plugins: { markdown: eslintMarkdown },
-    processor: "markdown/markdown",
+    files: ["package.json"],
+    languageOptions: {
+      parser: "jsonc-eslint-parser",
+    },
+    plugins: { depend: eslintPluginDepend },
     rules: {
-      ...eslintMarkdown.configs.recommended.rules,
+      "depend/ban-dependencies": "error",
+    },
+  },
+  {
+    files: ["**/*.{md,mdx}"],
+    ...eslintPluginMdx.flat,
+    ...eslintPluginMdx.flatCodeBlocks,
+    processor: eslintPluginMdx.createRemarkProcessor({
+      lintCodeBlocks: true,
+    }),
+    rules: {
       "no-undef": "off",
       "no-unused-vars": "off",
       "prettier/prettier": ["warn", { parser: "markdown" }],
@@ -140,7 +151,7 @@ export default [
   },
   ...eslintPluginToml.configs[FLAT_BASE],
   {
-    files: ["*.toml", "**/*.toml"],
+    files: ["**/*.toml", "**/*.md/*.toml"],
     rules: {
       ...eslintPluginToml.configs[FLAT_RECOMMENDED].rules,
       "prettier/prettier": ["error", { parser: "toml" }],
@@ -148,7 +159,7 @@ export default [
   },
   ...eslintPluginYml.configs[FLAT_BASE],
   {
-    files: ["*.yaml", "**/*.yaml", "*.yml", "**/*.yml"],
+    files: ["**/*.yaml", "**/*.yml", "**/*.md/*.yaml"],
     rules: {
       ...eslintPluginYml.configs[FLAT_RECOMMENDED].rules,
       ...eslintPluginYml.configs["flat/prettier"].rules,
