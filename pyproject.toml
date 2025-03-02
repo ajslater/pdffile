@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "comicbox-pdffile"
-version = "0.1.8"
+version = "0.2.0"
 description = "A ZipFile like API for PyMuPDF"
 license = "GPL-3.0-only"
 authors = ["AJ Slater <aj@slater.net>"]
