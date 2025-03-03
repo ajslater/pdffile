@@ -98,6 +98,8 @@ reportMissingImports = true
 reportImportCycles = true
 pythonVersion = "3.9"
 pythonPlatform = "All"
+venvPath = "."
+venv = ".venv"
 
 [tool.pytest.ini_options]
 addopts = """
