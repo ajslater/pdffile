@@ -82,7 +82,7 @@ class PDFFile:
     @staticmethod
     def to_bool(value: Any) -> bool:
         """Convert a boolean string to a python bool."""
-        if isinstance(str, value):
+        if isinstance(value, str):
             value = value.lower() not in FALSY
         return bool(value)
 
