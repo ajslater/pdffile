@@ -15,5 +15,9 @@ available in the
 
 ## Data Types
 
-PDFFile automatically converts pdf date strings to python datetimes and pdf/xml
-boolean strings to python bools and back.
+MuPDF reads and writes all data types as strings. PDFFile automatically converts
+pdf date strings to python datetimes and pdf/xml boolean strings to python bools
+and back.
+
+The helper functions to_datetime, to_pdf_date, to_bool, and to_xml_bool are
+available on the PDFFile class.
