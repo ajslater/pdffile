@@ -29,7 +29,7 @@ class PDFFile:
     SUFFIX: str = ".pdf"
     _TMP_SUFFIX: str = ".comicbox_tmp_pdf"
     _DEFAULT_PAGE_COUNT: int = 100
-    _METADATA_COPY_KEYS: tuple[str, ...] = (
+    _METADATA_PRESERVE_KEYS: tuple[str, ...] = (
         "format",
         "encryption",
         "creationDate",
@@ -173,7 +173,7 @@ class PDFFile:
         """Get preserved metadata."""
         old_metadata = {}
         if self._doc.metadata:
-            for key in self._METADATA_COPY_KEYS:
+            for key in self._METADATA_PRESERVE_KEYS:
                 if value := self._doc.metadata.get(key):
                     old_metadata[key] = value
         return old_metadata
@@ -190,7 +190,7 @@ class PDFFile:
             tmp_path,
             garbage=4,
             deflate=True,
-            deflate_images=False,
+            deflate_images=True,
             deflate_fonts=True,
             encryption=fitz.PDF_ENCRYPT_KEEP,  # type: ignore[reportAttributeAccessIssue]
             linear=True,
