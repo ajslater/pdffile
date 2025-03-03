@@ -20,6 +20,7 @@ fi
 ##### Javascript, JSON, Markdown, YAML #####
 ############################################
 npm run lint
+echo "done with npm lint"
 
 ################################
 ###### Docker, Shell, Etc ######
