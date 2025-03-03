@@ -32,12 +32,12 @@ jobs:
           root: .
   deploy:
     docker:
-      - image: cimg/python:3.13
+      - image: ghcr.io/astral-sh/uv
     steps:
       - attach_workspace:
           at: .
       - run:
-          command: ./bin/publish-pypi.sh
+          command: UV_PUBLISH_TOKEN=$PYPI_PASS uv publish
 version: 2.1
 workflows:
   main:
