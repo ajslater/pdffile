@@ -1,5 +1,10 @@
 # 📰 PDFFile News
 
+## v0.2.3
+
+- Fix writing crash.
+- Liberally parse input to to_datetime with dateutil.
+
 ## v0.2.2
 
 - Fix crash in to_bool()

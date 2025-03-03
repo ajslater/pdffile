@@ -42,9 +42,12 @@ class PDFFile:
     @staticmethod
     def to_datetime(pdf_date: str) -> datetime | None:
         """Convert a PDF date string to a datetime."""
+        if isinstance(pdf_date, datetime):
+            return pdf_date
         if not pdf_date or not pdf_date.startswith("D:"):
             return None
         dt_str = pdf_date.replace("'", "")
+        dt_str = dt_str.replace("Z", "+")
         return datetime.strptime(dt_str, PDF_DATETIME_TEMPLATE)  # noqa: DTZ007
 
     @staticmethod
@@ -162,7 +165,7 @@ class PDFFile:
         return page_count
 
     @classmethod
-    def _converted_metadata(cls, metadata: Mapping, to: bool) -> dict:
+    def _convert_metadata(cls, metadata: dict, to: bool) -> dict:
         """MuPDF only writes booleans as strings."""
         converted_metadata = {}
         func_index = 0 if to else 1
@@ -171,16 +174,15 @@ class PDFFile:
             if value is not None:
                 func = functions[func_index]
                 converted_metadata[key] = func(value)
-        return converted_metadata
+        metadata.update(converted_metadata)
+        return metadata
 
     def get_metadata(self) -> dict:
         """Return metadata from the pdf doc."""
         md = self._doc.metadata
         if not md:
             md = {}
-        converted_metadata = self._converted_metadata(md, to=True)
-        md.update(converted_metadata)
-        return md
+        return self._convert_metadata(md, to=True)
 
     def _get_preserved_metadata(self) -> dict:
         """Get preserved metadata."""
@@ -194,9 +196,9 @@ class PDFFile:
     def save_metadata(self, metadata: Mapping) -> None:
         """Set metadata to the pdf doc."""
         preserved_metadata = self._get_preserved_metadata()
-        converted_metadata = self._converted_metadata(metadata, to=False)
-        new_metadata = {**preserved_metadata, **metadata, **converted_metadata}
-        self._doc.set_metadata(new_metadata)  # type: ignore[reportAttributeAccessIssue]
+        new_metadata = {**preserved_metadata, **metadata}
+        converted_metadata = self._convert_metadata(new_metadata, to=False)
+        self._doc.set_metadata(converted_metadata)  # type: ignore[reportAttributeAccessIssue]
 
         tmp_path = self._path.with_suffix(self._TMP_SUFFIX)
         self._doc.save(
