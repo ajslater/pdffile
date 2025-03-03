@@ -3,6 +3,6 @@
 set -euxo pipefail
 mkdir -p test-results
 export PYTHONPATH=.
-LOGLEVEL=DEBUG uvx pytest "$@"
+LOGLEVEL=DEBUG uv run pytest "$@"
 # pytest-cov leaves .coverage.$HOST.$PID.$RAND files around while coverage itself doesn't
-uvx coverage erase || true
+uv run coverage erase || true

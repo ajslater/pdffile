@@ -2,26 +2,26 @@
 ## Update pip & install node modules
 ## @category Install
 install-deps:
-	uvx pip install --upgrade pip
+	uv pip install --upgrade pip
 	npm install
 
 .PHONY: install
 ## Install for production
 ## @category Install
 install-prod: install-deps
-	uv sync --no-install-project --no-dev
+	uv sync --no-install-project --no-dev --all-extras
 
 .PHONY: install-dev
 ## Install dev requirements
 ## @category Install
 install-dev: install-deps
-	uv sync --no-install-project
+	uv sync --no-install-project --all-extras --all-groups
 
 .PHONY: install-all
 ## Install with all extras
 ## @category Install
 install-all: install-deps
-	uv sync --no-install-project --all-extras
+	uv sync --no-install-project --all-extras --all-groups
 
 .PHONY: clean
 ## Clean pycaches
