@@ -1,5 +1,5 @@
 .PHONY: install-deps
-## Update pip & install 
+## Update pip & install node modules
 ## @category Install
 install-deps:
 	uvx pip install --upgrade pip
