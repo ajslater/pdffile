@@ -54,7 +54,6 @@ export const CONFIGS = {
       "depend/ban-dependencies": [
         "error",
         {
-          // import-x doesn't work with eslint 9 yet
           allowed: ["eslint-plugin-import"],
         },
       ],
