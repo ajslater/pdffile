@@ -1,5 +1,9 @@
 # 📰 PDFFile News
 
+## v0.2.2
+
+- Fix crash in to_bool()
+
 ## v0.2.1
 
 - from_datetime method becomes to_pdf_date and coerces dates from string with
