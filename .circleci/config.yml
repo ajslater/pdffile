@@ -32,12 +32,12 @@ jobs:
           root: .
   deploy:
     docker:
-      - image: ghcr.io/astral-sh/uv
+      - image: ghcr.io/astral-sh/uv:bookworm-slim
     steps:
       - attach_workspace:
           at: .
       - run:
-          command: UV_PUBLISH_TOKEN=$PYPI_PASS uv publish
+          command: uv publish
 version: 2.1
 workflows:
   main:
