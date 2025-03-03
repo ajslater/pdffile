@@ -1,6 +1,6 @@
 """Simple test."""
 
-from tests.pdffile import PDFFile
+from pdffile import PDFFile
 
 
 def test_is_pdffile():

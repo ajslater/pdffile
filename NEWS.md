@@ -1,5 +1,13 @@
 # 📰 PDFFile News
 
+## v0.2.0
+
+- Automatically converts pdf datestrings to python datetimes and back.
+- Automatically converts pdf/xml bool string to python bools and back
+- PDFFile static methods to_datetime, from_datetime and to_bool and from_bool do
+  this manually.
+- Deflate images on save.
+
 ## v0.1.8
 
 - Build with circleci

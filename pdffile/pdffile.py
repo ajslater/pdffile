@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import math
+from datetime import datetime
 from logging import getLogger
 from pathlib import Path
+from types import MappingProxyType
 from typing import TYPE_CHECKING
 from zipfile import ZipInfo
 
@@ -14,6 +16,9 @@ from filetype import guess
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+
+PDF_DATETIME_TEMPLATE = "D:%Y%m%d%H%M%S%z"
+TZ_DELIMITERS = ("+", "-")
 LOG = getLogger(__name__)
 
 
@@ -24,7 +29,7 @@ class PDFFile:
     SUFFIX: str = ".pdf"
     _TMP_SUFFIX: str = ".comicbox_tmp_pdf"
     _DEFAULT_PAGE_COUNT: int = 100
-    _METADATA_COPY_KEYS: tuple[str, ...] = (
+    _METADATA_PRESERVE_KEYS: tuple[str, ...] = (
         "format",
         "encryption",
         "creationDate",
@@ -32,18 +37,69 @@ class PDFFile:
         "trapped",
     )
 
+    @staticmethod
+    def to_datetime(pdf_date: str) -> datetime | None:
+        """Convert a PDF date string to a datetime."""
+        if not pdf_date or not pdf_date.startswith("D:"):
+            return None
+        dt_str = pdf_date.replace("'", "")
+        return datetime.strptime(dt_str, PDF_DATETIME_TEMPLATE)  # noqa: DTZ007
+
+    @staticmethod
+    def from_datetime(dt: datetime) -> str | None:
+        """Convert a datetime to a PDF date string."""
+        if not dt:
+            return None
+
+        dt_str = dt.strftime(PDF_DATETIME_TEMPLATE)
+
+        # Separate timezone and convert to PDF offset string
+        for delimiter in TZ_DELIMITERS:
+            parts = dt_str.split(delimiter)
+            if len(parts) > 1:
+                dt_str, tz_str = parts
+                h = tz_str[:2]
+                m = tz_str[2:4]
+                break
+        else:
+            # Default
+            delimiter = "+"
+            h = m = "00"
+        offset_str = f"{h}'{m}'"
+
+        # Recombine with PDF offset str.
+        return f"{dt_str}{delimiter}{offset_str}"
+
+    @staticmethod
+    def to_bool(bool_str: str) -> bool:
+        """Convert a boolean string to a python bool."""
+        return bool_str.lower() == "true"
+
+    @staticmethod
+    def from_bool(value: bool) -> str:
+        """Convert a boolean value to an xml string."""
+        return str(value).lower()
+
+    _TYPE_COVERSION_MAP = MappingProxyType(
+        {
+            "trapped": (to_bool, from_bool),
+            "creationDate": (to_datetime, from_datetime),
+            "modDate": (to_datetime, from_datetime),
+        }
+    )
+
     @classmethod
     def is_pdffile(cls, path: str) -> bool:
         """Is the path a pdf."""
         if Path(path).suffix.lower() == cls.SUFFIX:
             return True
-        kind = guess(path)  # type: ignore
+        kind = guess(path)
         return bool(kind and kind.mime == cls.MIME_TYPE)
 
     def __init__(self, path: Path) -> None:
         """Initialize document."""
         self._path: Path = path
-        self._doc: fitz.Document = fitz.Document(self._path)  # type: ignore
+        self._doc: fitz.Document = fitz.Document(self._path)
 
     def __enter__(self):
         """Context enter."""
@@ -67,12 +123,12 @@ class PDFFile:
             infos.append(info)
         return infos
 
-    def read(self, filename: str, to_pixmap: bool = False) -> bytes:
+    def read(self, filename: str, to_pixmap: bool = False) -> bytes:  # noqa: FBT002
         """Return a single page pdf doc or pixmap."""
         index = int(filename)
 
         if to_pixmap:
-            pix = self._doc.get_page_pixmap(index)  # type: ignore
+            pix = self._doc.get_page_pixmap(index)  # type: ignore[reportAttributeAccessIssue]
             page_bytes = pix.tobytes(output="ppm")
         else:
             page_bytes = self._doc.convert_to_pdf(index, index)
@@ -92,18 +148,32 @@ class PDFFile:
             page_count = self._DEFAULT_PAGE_COUNT
         return page_count
 
+    @classmethod
+    def _converted_metadata(cls, metadata: Mapping, to: bool) -> dict:
+        """MuPDF only writes booleans as strings."""
+        converted_metadata = {}
+        func_index = 0 if to else 1
+        for key, functions in cls._TYPE_COVERSION_MAP.items():
+            value = metadata.get(key)
+            if value is not None:
+                func = functions[func_index]
+                converted_metadata[key] = func(value)
+        return converted_metadata
+
     def get_metadata(self) -> dict:
         """Return metadata from the pdf doc."""
         md = self._doc.metadata
         if not md:
             md = {}
+        converted_metadata = self._converted_metadata(md, to=True)
+        md.update(converted_metadata)
         return md
 
     def _get_preserved_metadata(self) -> dict:
         """Get preserved metadata."""
         old_metadata = {}
         if self._doc.metadata:
-            for key in self._METADATA_COPY_KEYS:
+            for key in self._METADATA_PRESERVE_KEYS:
                 if value := self._doc.metadata.get(key):
                     old_metadata[key] = value
         return old_metadata
@@ -111,20 +181,18 @@ class PDFFile:
     def save_metadata(self, metadata: Mapping) -> None:
         """Set metadata to the pdf doc."""
         preserved_metadata = self._get_preserved_metadata()
-        new_metadata = {
-            **preserved_metadata,
-            **metadata,
-        }
-        self._doc.set_metadata(new_metadata)  # type: ignore
+        converted_metadata = self._converted_metadata(metadata, to=False)
+        new_metadata = {**preserved_metadata, **metadata, **converted_metadata}
+        self._doc.set_metadata(new_metadata)  # type: ignore[reportAttributeAccessIssue]
 
         tmp_path = self._path.with_suffix(self._TMP_SUFFIX)
         self._doc.save(
             tmp_path,
             garbage=4,
             deflate=True,
-            deflate_images=False,
+            deflate_images=True,
             deflate_fonts=True,
-            encryption=fitz.PDF_ENCRYPT_KEEP,  # type: ignore
+            encryption=fitz.PDF_ENCRYPT_KEEP,  # type: ignore[reportAttributeAccessIssue]
             linear=True,
             pretty=True,
             no_new_id=True,
