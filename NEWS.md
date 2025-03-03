@@ -2,27 +2,13 @@
 
 ## v0.2.3
 
-- Fix writing crash.
-- Liberally parse input to to_datetime with dateutil.
-
-## v0.2.2
-
-- Fix crash in to_bool()
-
-## v0.2.1
-
-- from_datetime method becomes to_pdf_date and coerces dates from string with
-  dateutil to pdf date strings.
-- from_bool method becomes to_xml_bool and coerces strings and other values to
-  xml bool string.
-
-## v0.2.0
-
 - Automatically converts pdf datestrings to python datetimes and back.
 - Automatically converts pdf/xml bool string to python bools and back
-- PDFFile static methods to_datetime, from_datetime and to_bool and from_bool do
-  this manually.
+- PDFFile static methods to_datetime, to_pdf_date, and to_bool and to_xml_bool
+  do this manually.
 - Deflate images on save.
+
+## v0.2.0-0.2.2 - Yanked
 
 ## v0.1.8
 
