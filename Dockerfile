@@ -1,6 +1,7 @@
 FROM python:3.13-bookworm
 LABEL maintainer="AJ Slater <aj@slater.net>"
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 COPY debian.sources /etc/apt/sources.list.d/
 # hadolint ignore=DL3008
 RUN apt-get clean \
