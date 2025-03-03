@@ -7,7 +7,7 @@ set -euxo pipefail
 ####################
 uvx ruff check .
 uvx ruff format --check .
-pyright
+uvx pyright --pythonpath .venv/bin/python
 uvx vulture .
 if [ "$(uname)" = "Darwin" ]; then
   # Radon is only of interest to development
