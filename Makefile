@@ -1,3 +1,9 @@
+.PHONY: venv
+## Create virtual environment
+## @category Install
+venv:
+	uv venv
+
 .PHONY: install-deps
 ## Update pip & install node modules
 ## @category Install
