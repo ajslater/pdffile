@@ -5,16 +5,16 @@ set -euxo pipefail
 ####################
 ###### Python ######
 ####################
-poetry run ruff check .
-poetry run ruff format --check .
-poetry run pyright
-poetry run vulture .
+uvx ruff check .
+uvx ruff format --check .
+pyright
+uvx vulture .
 if [ "$(uname)" = "Darwin" ]; then
   # Radon is only of interest to development
-  poetry run radon mi --min B .
-  poetry run radon cc --min C .
+  uvx radon mi --min B .
+  uvx radon cc --min C .
 fi
-# poetry run djlint templates --profile=django --lint
+# uvx djlint templates --profile=django --lint
 
 ############################################
 ##### Javascript, JSON, Markdown, YAML #####
@@ -35,4 +35,4 @@ if [ "$(uname)" = "Darwin" ]; then
   # circleci config validate .circleci/config.yml
 fi
 ./bin/roman.sh -i .prettierignore .
-poetry run codespell .
+uvx codespell .

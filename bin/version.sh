@@ -1,9 +1,9 @@
 #!/bin/bash
-# Get version or set version in Frontend & API.
+# Get version or set version in pyproject.toml.
 set -euo pipefail
 VERSION="${1:-}"
 if [ "$VERSION" = "" ]; then
-  poetry version | awk '{print $2};'
+  uvx toml get --toml-path=pyproject.toml project.version
 else
-  poetry version "$VERSION"
+  uvx toml set --toml-path=pyproject.toml project.version "$VERSION"
 fi

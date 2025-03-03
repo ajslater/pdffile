@@ -16,6 +16,7 @@ from filetype import guess
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+
 PDF_DATETIME_TEMPLATE = "D:%Y%m%d%H%M%S%z"
 TZ_DELIMITERS = ("+", "-")
 LOG = getLogger(__name__)
