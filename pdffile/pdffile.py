@@ -7,10 +7,11 @@ from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from zipfile import ZipInfo
 
 import fitz
+from dateutil import parser
 from filetype import guess
 
 if TYPE_CHECKING:
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
 
 PDF_DATETIME_TEMPLATE = "D:%Y%m%d%H%M%S%z"
 TZ_DELIMITERS = ("+", "-")
+FALSY = {None, "", "false", "0", False}
 LOG = getLogger(__name__)
 
 
@@ -46,10 +48,17 @@ class PDFFile:
         return datetime.strptime(dt_str, PDF_DATETIME_TEMPLATE)  # noqa: DTZ007
 
     @staticmethod
-    def from_datetime(dt: datetime) -> str | None:
+    def to_pdf_date(value: datetime | str) -> str | None:
         """Convert a datetime to a PDF date string."""
-        if not dt:
+        if not value:
             return None
+
+        if isinstance(value, str):
+            if value.startswith("D:"):
+                return value
+            dt = parser.parse(value)
+        else:
+            dt = value
 
         dt_str = dt.strftime(PDF_DATETIME_TEMPLATE)
 
@@ -71,20 +80,24 @@ class PDFFile:
         return f"{dt_str}{delimiter}{offset_str}"
 
     @staticmethod
-    def to_bool(bool_str: str) -> bool:
+    def to_bool(value: Any) -> bool:
         """Convert a boolean string to a python bool."""
-        return bool_str.lower() == "true"
+        if isinstance(str, value):
+            value = value.lower() not in FALSY
+        return bool(value)
 
     @staticmethod
-    def from_bool(value: bool) -> str:
+    def to_xml_bool(value: Any) -> str:
         """Convert a boolean value to an xml string."""
-        return str(value).lower()
+        if not isinstance(value, str):
+            value = str(bool(value))
+        return value.lower()
 
     _TYPE_COVERSION_MAP = MappingProxyType(
         {
-            "trapped": (to_bool, from_bool),
-            "creationDate": (to_datetime, from_datetime),
-            "modDate": (to_datetime, from_datetime),
+            "trapped": (to_bool, to_xml_bool),
+            "creationDate": (to_datetime, to_pdf_date),
+            "modDate": (to_datetime, to_pdf_date),
         }
     )
 
