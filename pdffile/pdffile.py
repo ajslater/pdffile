@@ -10,9 +10,9 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 from zipfile import ZipInfo
 
-import fitz
 from dateutil import parser
 from filetype import guess
+from pymupdf import Document, mupdf
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -115,7 +115,7 @@ class PDFFile:
     def __init__(self, path: Path) -> None:
         """Initialize document."""
         self._path: Path = path
-        self._doc: fitz.Document = fitz.Document(self._path)
+        self._doc: Document = Document(self._path)
 
     def __enter__(self):
         """Context enter."""
@@ -207,7 +207,7 @@ class PDFFile:
             deflate=True,
             deflate_images=True,
             deflate_fonts=True,
-            encryption=fitz.PDF_ENCRYPT_KEEP,  # type: ignore[reportAttributeAccessIssue]
+            encryption=mupdf.PDF_ENCRYPT_KEEP,
             linear=True,
             pretty=True,
             no_new_id=True,
