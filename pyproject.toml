@@ -8,6 +8,7 @@ dependencies = [
   "filetype<2.0.0,>=1.2.0",
   "pymupdf<2.0.0,>=1.24.0",
   "python-dateutil>=2.9.0.post0",
+  "typing-extensions>=4.13.2",
 ]
 description = "A ZipFile like API for PyMuPDF"
 readme = "README.md"
