@@ -1,5 +1,9 @@
 # 📰 PDFFile News
 
+## v0.2.4
+
+- Parse timezone naive PDF datetimes.
+
 ## v0.2.3
 
 - Automatically converts pdf datestrings to python datetimes and back.

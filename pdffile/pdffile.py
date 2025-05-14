@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 from logging import getLogger
 from pathlib import Path
 from types import MappingProxyType
@@ -18,7 +18,10 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
 
-PDF_DATETIME_TEMPLATE = "D:%Y%m%d%H%M%S%z"
+DATETIME_AWARE_TMPL = "D:%Y%m%d%H%M%S%z"
+DATETIME_NAIVE_TMPL = "D:%Y%m%d%H%M%S"
+DATE_TMPL = "D:%Y%m%d"
+DATETIME_TEMPLATES = (DATETIME_AWARE_TMPL, DATETIME_NAIVE_TMPL, DATE_TMPL)
 TZ_DELIMITERS = ("+", "-")
 FALSY = {None, "", "false", "0", False}
 LOG = getLogger(__name__)
@@ -48,7 +51,22 @@ class PDFFile:
             return None
         dt_str = pdf_date.replace("'", "")
         dt_str = dt_str.replace("Z", "+")
-        return datetime.strptime(dt_str, PDF_DATETIME_TEMPLATE)  # noqa: DTZ007
+        last_exc = None
+        dttm = None
+        for template in DATETIME_TEMPLATES:
+            try:
+                dttm = datetime.strptime(dt_str, template)  # noqa: DTZ007
+                if not dttm.tzinfo:
+                    dttm.replace(tzinfo=timezone.utc)
+                break
+            except ValueError as exc:
+                last_exc = exc
+        if not dttm:
+            if last_exc:
+                raise last_exc
+            reason = "Unable to parse pdf datetime {pdf_date}."
+            raise ValueError(reason)
+        return dttm
 
     @staticmethod
     def to_pdf_date(value: datetime | str) -> str | None:
@@ -59,17 +77,20 @@ class PDFFile:
         if isinstance(value, str):
             if value.startswith("D:"):
                 return value
-            dt = parser.parse(value)
+            dttm = parser.parse(value)
         else:
-            dt = value
+            dttm = value
 
-        dt_str = dt.strftime(PDF_DATETIME_TEMPLATE)
+        if not dttm.tzinfo:
+            dttm.replace(tzinfo=timezone.utc)
+
+        dttm_str = dttm.strftime(DATETIME_AWARE_TMPL)
 
         # Separate timezone and convert to PDF offset string
         for delimiter in TZ_DELIMITERS:
-            parts = dt_str.split(delimiter)
+            parts = dttm_str.split(delimiter)
             if len(parts) > 1:
-                dt_str, tz_str = parts
+                dttm_str, tz_str = parts
                 h = tz_str[:2]
                 m = tz_str[2:4]
                 break
@@ -80,7 +101,7 @@ class PDFFile:
         offset_str = f"{h}'{m}'"
 
         # Recombine with PDF offset str.
-        return f"{dt_str}{delimiter}{offset_str}"
+        return f"{dttm_str}{delimiter}{offset_str}"
 
     @staticmethod
     def to_bool(value: Any) -> bool:
