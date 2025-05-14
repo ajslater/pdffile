@@ -17,7 +17,7 @@ from pymupdf import Document, mupdf
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-
+PDF_DATE_PREFIX = "D:"
 DATETIME_AWARE_TMPL = "D:%Y%m%d%H%M%S%z"
 DATETIME_NAIVE_TMPL = "D:%Y%m%d%H%M%S"
 DATE_TMPL = "D:%Y%m%d"
@@ -47,7 +47,7 @@ class PDFFile:
         """Convert a PDF date string to a datetime."""
         if isinstance(pdf_date, datetime):
             return pdf_date
-        if not pdf_date or not pdf_date.startswith("D:"):
+        if not pdf_date or not pdf_date.startswith(PDF_DATE_PREFIX):
             return None
         dt_str = pdf_date.replace("'", "")
         dt_str = dt_str.replace("Z", "+")
@@ -75,7 +75,7 @@ class PDFFile:
             return None
 
         if isinstance(value, str):
-            if value.startswith("D:"):
+            if value.startswith(PDF_DATE_PREFIX):
                 return value
             dttm = parser.parse(value)
         else:
