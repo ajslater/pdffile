@@ -14,6 +14,6 @@ WORKDIR /app
 
 COPY bin ./bin
 COPY .gitignore .prettierignore .remarkignore eslint.config.js package.json package-lock.json pyproject.toml uv.lock Makefile ./
-RUN make venv install-all
+RUN make install-all
 
 COPY . .
