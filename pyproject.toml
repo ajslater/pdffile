@@ -1,6 +1,6 @@
 [project]
 name = "comicbox-pdffile"
-version = "0.2.4"
+version = "0.2.5"
 authors = [{ name = "AJ Slater", email = "aj@slater.net" }]
 license = { text = "GPL-3.0-only" }
 requires-python = "<4.0,>=3.9"

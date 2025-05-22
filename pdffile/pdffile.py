@@ -229,7 +229,7 @@ class PDFFile:
             deflate_images=True,
             deflate_fonts=True,
             encryption=mupdf.PDF_ENCRYPT_KEEP,
-            linear=True,
+            use_objstms=True,
             pretty=True,
             no_new_id=True,
         )
