@@ -160,7 +160,7 @@ class PDFFile:
             infos.append(info)
         return infos
 
-    def read(self, filename: str, to_pixmap: bool = False) -> bytes:  # noqa: FBT002
+    def read(self, filename: str, *, to_pixmap: bool = False) -> bytes:
         """Return a single page pdf doc or pixmap."""
         index = int(filename)
 
@@ -186,7 +186,7 @@ class PDFFile:
         return page_count
 
     @classmethod
-    def _convert_metadata(cls, metadata: dict, to: bool) -> dict:
+    def _convert_metadata(cls, metadata: dict, *, to: bool) -> dict:
         """MuPDF only writes booleans as strings."""
         converted_metadata = {}
         func_index = 0 if to else 1
@@ -229,7 +229,7 @@ class PDFFile:
             deflate_images=True,
             deflate_fonts=True,
             encryption=mupdf.PDF_ENCRYPT_KEEP,
-            linear=True,
+            use_objstms=True,
             pretty=True,
             no_new_id=True,
         )

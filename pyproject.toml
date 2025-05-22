@@ -1,6 +1,6 @@
 [project]
 name = "comicbox-pdffile"
-version = "0.2.4"
+version = "0.2.5"
 authors = [{ name = "AJ Slater", email = "aj@slater.net" }]
 license = { text = "GPL-3.0-only" }
 requires-python = "<4.0,>=3.9"
@@ -142,7 +142,6 @@ extend-ignore = [
   "E114",    # formatted
   "E117",    # over-indented
   "E501",    # 88 char line
-  "FBT001",  # boolean params
   "ISC001",  # formatted
   "PERF203", # try block in loop
   "S101",    # assert

@@ -1,5 +1,9 @@
 # 📰 PDFFile News
 
+## v0.2.5
+
+- Save with object streams compression instead of linear format.
+
 ## v0.2.4
 
 - Parse timezone naive PDF datetimes.
