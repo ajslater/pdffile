@@ -9,7 +9,7 @@ PDFFile has a [NEWS file](NEWS.md) to summarize changes that affect users.
 
 ## 🕸️ HTML Docs
 
-[HTML formatted docs are available here](https://comicbox-pdffile.readthedocs.io)
+[HTML formatted docs are available here](https://pdffile.readthedocs.io)
 
 ## 📦 Dependencies
 

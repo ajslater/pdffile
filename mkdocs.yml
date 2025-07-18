@@ -1,6 +1,6 @@
-site_name: Treestamps
+site_name: PDFFile
 site_author: AJ
-site_description: The Nudebomb recursively strips matroska media files of unwanted audio and subtitle tracks.
+site_description: .A ZipFile like API for PDFs
 theme:
   name: mkdocs
   color_mode: dark
