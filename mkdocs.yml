@@ -1,6 +1,6 @@
 site_name: PDFFile
 site_author: AJ
-site_description: .A ZipFile like API for PDFs
+site_description: A ZipFile like API for PDFs
 theme:
   name: mkdocs
   color_mode: dark
