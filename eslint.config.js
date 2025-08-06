@@ -51,12 +51,6 @@ export const CONFIGS = {
     },
     rules: {
       "array-func/prefer-array-from": "off", // for modern browsers the spread operator, as preferred by unicorn, works fine.
-      "depend/ban-dependencies": [
-        "error",
-        {
-          allowed: ["eslint-plugin-import"],
-        },
-      ],
       "max-params": ["warn", 4],
       "no-console": "warn",
       "no-debugger": "warn",
@@ -98,7 +92,7 @@ export default [
   },
   eslintPluginPrettierRecommended,
   eslintPluginSecurity.configs.recommended,
-  eslintPluginStylistic.configs["all-flat"],
+  eslintPluginStylistic.configs.all,
   {
     languageOptions: {
       globals: {
