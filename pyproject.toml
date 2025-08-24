@@ -1,18 +1,5 @@
 [project]
-name = "comicbox-pdffile"
-version = "0.2.5"
 authors = [{ name = "AJ Slater", email = "aj@slater.net" }]
-license = { text = "GPL-3.0-only" }
-requires-python = "<4.0,>=3.10"
-dependencies = [
-  "filetype~=1.2",
-  "pymupdf~=1.24",
-  "python-dateutil~=2.9.0",
-  "typing-extensions~=4.13",
-]
-description = "A ZipFile like API for PyMuPDF"
-readme = "README.md"
-keywords = []
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -20,18 +7,30 @@ classifiers = [
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3 :: Only",
 ]
+dependencies = [
+  "filetype~=1.2",
+  "pymupdf~=1.24",
+  "python-dateutil~=2.9",
+  "typing-extensions~=4.13",
+]
+description = "A ZipFile like API for PyMuPDF"
+keywords = ["pdf", "zipfile"]
+license = "GPL-3.0-only"
+name = "comicbox-pdffile"
+readme = "README.md"
+requires-python = "<4.0,>=3.10"
+version = "0.2.5"
 
 [project.urls]
 News = "https://github.com/ajslater/comicbox-pdffile"
-"Report Issues" = "https://github.com/ajslater/comicbox-pdffile/issues"
-homepage = "https://github.com/ajslater/comicbox-pdffile"
-repository = "https://github.com/ajslater/comicbox-pdffile"
-documentation = "https://github.com/ajslater/comicbox-pdffile"
+Documentation = "https://pdffile.readthedocs.io/"
+Issues = "https://github.com/ajslater/comicbox-pdffile/issues"
+Source = "https://github.com/ajslater/comicbox-pdffile"
 
 [dependency-groups]
 dev = [
   "basedpyright~=1.30",
-  "codespell~=2.1.0",
+  "codespell~=2.4",
   "coverage[toml]~=7.0",
   "mkapi~=4.4",
   "mkdocs~=1.6",
@@ -42,7 +41,7 @@ dev = [
   "radon[toml]~=6.0",
   "ruff~=0.12",
   "toml-cli~=0.7",
-  "ty>=0.0.1a16",
+  "ty>=0.0.1a19",
   "types-python-dateutil~=2.8",
   "vulture~=2.3",
 ]
@@ -79,7 +78,7 @@ exclude = [
   "dist",
   "test-results",
   "typings",
-  "vulture_whitelist.py",
+  "vulture_ignorelist.py",
 ]
 pythonVersion = "3.10"
 failOnWarnings = false
@@ -89,6 +88,7 @@ reportImportCycles = true
 reportIncompatibleUnannotatedOverride = true
 reportMissingParameterType = false
 reportMissingTypeArgument = false
+reportMissingTypeStubs = false
 reportPrivateUsage = false # ruff does this
 reportUnannotatedClassAttribute = false
 reportUnknownArgumentType = false
@@ -97,15 +97,12 @@ reportUnknownParameterType = false
 reportUnknownVariableType = false
 reportUnusedCallResult = false
 reportUnusedParameter = false # ruff does this 
-reportMissingTypeStubs = false
 
 [tool.codespell]
-skip = ".*,*~,./dist,./node_modules,./package.json,./package-lock.json,./uv.lock,./test-results"
 builtin = 'clear,rare,code'
 check-hidden = true
-# Remove 'coverd' when this issue is resolved
-# https://github.com/codespell-project/codespell/issues/1212
-ignore-words-list = 'thead,ro,jupyter,coverd,searched,ws,falsy'
+ignore-words-list = 'thead,ro,jupyter,searched,ws,falsy'
+skip = ".*,*~,./dist,./node_modules,./package.json,./package-lock.json,./uv.lock,./test-results"
 
 [tool.coverage.html]
 directory = "test-results/coverage"
@@ -121,6 +118,7 @@ omit = [
   "node_modules/*",
   "test-results/*",
   "typings/*",
+  "vulture_ignorelist.py",
 ]
 
 [tool.pytest.ini_options]
@@ -163,68 +161,74 @@ extend-ignore = [
   "W191",    # formatted
 ]
 extend-select = [
-  "A",
   # "AIR",
-  # "ANN",
-  "ARG",
-  "ASYNC",
-  "B",
-  "B9",
-  "BLE",
-  "C",
-  "C4",
-  "C90",
-  "COM",
-  # "CPY",
-  "D",
-  "DJ",
-  # "DOC",
-  "DTZ",
-  "E",
-  "EM",
   "ERA",
-  "EXE",
-  "F",
-  "FA",
   # "FAST",
+  # ########
+  # flake8 #
+  # ########
+  "YTT",
+  # "ANN",
+  "ASYNC",
+  "S",
+  "BLE",
   "FBT",
+  "B",
+  "A",
+  "COM",
+  "C4",
+  # "CPY",
+  "DTZ",
+  "T10",
+  "DJ",
+  "EM",
+  "EXE",
   "FIX",
-  "FLY",
-  "FURB",
-  # "G",
-  "I",
-  "ICN",
-  "INP",
+  "FA",
   "INT",
   "ISC",
+  "ICN",
   "LOG",
-  # "PD",
-  "PERF",
-  "PGH",
+  # "G",
+  "INP",
   "PIE",
-  "PL",
-  "PT",
-  "PTH",
   "PYI",
-  # "Q", Formatted
-  "N",
-  # NPY,
-  "RET",
-  "RSE",
-  "RUF",
-  "S",
-  "SIM",
-  "SLF",
-  "SLOT",
-  "T10",
   "T20",
-  "TCH",
-  # "TD",
+  "PT",
+  # "Q", Formatted
+  "RSE",
+  "RET",
+  "SLF",
+  "SIM",
+  "SLOT",
   "TID",
-  "TRY",
-  "UP",
+  # "TD",
+  "TC",
+  "ARG",
+  "PTH",
+  # ############
+  # end flake8 #
+  # ############
+  "FLY",
+  "I",
+  "C90",
+  # "NPY",
+  # "PD",
+  "N",
+  "PERF",
+  "E",
   "W",
-  "YTT",
+  # "DOC",
+  "D",
+  "F",
+  "PGH",
+  "PLE",
+  "PLR",
+  "PLW",
+  "UP",
+  "FURB",
+  "RUF",
+  "TRY",
 ]
 external = ["V101"]
 task-tags = ["TODO", "FIXME", "XXX", "http", "HACK"]
@@ -234,6 +238,21 @@ task-tags = ["TODO", "FIXME", "XXX", "http", "HACK"]
 
 [tool.ruff.lint.pycodestyle]
 ignore-overlong-task-comments = true
+
+[tool.ty.environment]
+python = "./.venv"
+python-version = "3.10"
+
+[tool.ty.src]
+exclude = [
+  "**/.*",
+  "**/__pycache__",
+  "**/node_modules",
+  "dist",
+  "test-results",
+  "typings",
+  "vulture_ignorelist.py",
+]
 
 [tool.vulture]
 exclude = [
