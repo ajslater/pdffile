@@ -165,7 +165,7 @@ class PDFFile:
         index = int(filename)
 
         if to_pixmap:
-            pix = self._doc.get_page_pixmap(index)  # pyright: ignore[reportAttributeAccessIssue]
+            pix = self._doc.get_page_pixmap(index)
             page_bytes = pix.tobytes(output="ppm")
         else:
             page_bytes = self._doc.convert_to_pdf(index, index)
@@ -219,7 +219,7 @@ class PDFFile:
         preserved_metadata = self._get_preserved_metadata()
         new_metadata = {**preserved_metadata, **metadata}
         converted_metadata = self._convert_metadata(new_metadata, to=False)
-        self._doc.set_metadata(converted_metadata)  # pyright: ignore[reportAttributeAccessIssue]
+        self._doc.set_metadata(converted_metadata)
 
         tmp_path = self._path.with_suffix(self._TMP_SUFFIX)
         self._doc.save(
