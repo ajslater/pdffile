@@ -43,6 +43,15 @@ class PDFFile:
     )
 
     @staticmethod
+    def valid_pagenum(name: str) -> int:
+        """Check if a string is a non-negative integeger."""
+        page = int(name)
+        if page < 0:
+            reason = f"Negative page number {name} not valid."
+            raise ValueError(reason)
+        return page
+
+    @staticmethod
     def to_datetime(pdf_date: str) -> datetime | None:
         """Convert a PDF date string to a datetime."""
         if isinstance(pdf_date, datetime):
@@ -148,27 +157,39 @@ class PDFFile:
 
     def namelist(self) -> list[str]:
         """Return sortable zero padded index strings."""
+        emb_names = self._doc.embfile_names()
+
+        # Page names
         page_count = self.get_page_count()
         zero_pad = math.floor(math.log10(page_count)) + 1
-        return [f"{i:0{zero_pad}}" for i in range(page_count)]
+        page_names = [f"{i:0{zero_pad}}" for i in range(page_count)]
+        return emb_names + page_names
 
     def infolist(self) -> list[ZipInfo]:
         """Return ZipFile like infolist."""
         infos = []
-        for index in self.namelist():
-            info = ZipInfo(index)
+        for item in self.namelist():
+            try:
+                self.valid_pagenum(item)
+                info = ZipInfo(item)
+            except ValueError:
+                info = self._doc.embfile_info(item)
             infos.append(info)
         return infos
 
     def read(self, filename: str, *, to_pixmap: bool = False) -> bytes:
-        """Return a single page pdf doc or pixmap."""
-        index = int(filename)
-
-        if to_pixmap:
-            pix = self._doc.get_page_pixmap(index)
-            page_bytes = pix.tobytes(output="ppm")
+        """Return a single page pdf doc or pixmap or embedded file."""
+        try:
+            index = self.valid_pagenum(filename)
+        except ValueError:
+            page_bytes = self._doc.embfile_get(filename)
         else:
-            page_bytes = self._doc.convert_to_pdf(index, index)
+            if to_pixmap:
+                pix = self._doc.get_page_pixmap(index)
+                page_bytes = pix.tobytes(output="ppm")
+            else:
+                page_bytes = self._doc.convert_to_pdf(index, index)
+
         return page_bytes
 
     def close(self) -> None:
@@ -234,3 +255,24 @@ class PDFFile:
             no_new_id=True,
         )
         tmp_path.replace(self._path)
+
+    def remove(self, name: str):
+        """Remove files or pages from the pdf."""
+        try:
+            page = self.valid_pagenum(name)
+            self._doc.delete_page(page)
+        except ValueError:
+            self._doc.embfile_del(name)
+
+    def writestr(self, name: str, buffer: bytes, **_kwargs):
+        """
+        Write string to an embedded file.
+
+        Accept compress_type & compress args but discard them.
+        """
+        try:
+            _ = self.valid_pagenum(name)
+            reason = "Writing PDF pages not implemented."
+            raise NotImplementedError(reason)
+        except ValueError:
+            self._doc.embfile_add(name, buffer)

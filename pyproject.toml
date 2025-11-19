@@ -19,7 +19,7 @@ license = "GPL-3.0-only"
 name = "comicbox-pdffile"
 readme = "README.md"
 requires-python = "<4.0,>=3.10"
-version = "0.2.5"
+version = "0.3.0"
 
 [project.urls]
 News = "https://github.com/ajslater/comicbox-pdffile"

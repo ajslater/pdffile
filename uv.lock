@@ -172,7 +172,7 @@ wheels = [
 
 [[package]]
 name = "comicbox-pdffile"
-version = "0.2.5"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
   { name = "filetype" },

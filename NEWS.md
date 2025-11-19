@@ -1,5 +1,14 @@
 # 📰 PDFFile News
 
+## v0.3.0 - Embedded File Support
+
+- namelist() lists embedded files.
+- infolist() lists embedded files.
+- read() can also read named embedded files.
+- writestr() writes named embedded files. Throws if page numbers are submitted.
+- remove() will remove named embedded files or pages if the name evaluates to a
+  non-negative integer.
+
 ## v0.2.5
 
 - Save with object streams compression instead of linear format.
