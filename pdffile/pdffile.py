@@ -269,7 +269,7 @@ class PDFFile:
         except ValueError:
             self._doc.embfile_del(name)
 
-    def writestr(self, name: str, buffer: bytes | bytearray | BytesIO, **_kwargs):
+    def writestr(self, name: str, buffer: str | bytes | bytearray | BytesIO, **_kwargs):
         """
         Write string to an embedded file.
 
