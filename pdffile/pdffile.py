@@ -126,7 +126,7 @@ class PDFFile:
             value = str(bool(value))
         return value.lower()
 
-    _TYPE_COVERSION_MAP = MappingProxyType(
+    _TYPE_CONVERSION_MAP = MappingProxyType(
         {
             "trapped": (to_bool, to_xml_bool),
             "creationDate": (to_datetime, to_pdf_date),
@@ -211,7 +211,7 @@ class PDFFile:
         """MuPDF only writes booleans as strings."""
         converted_metadata = {}
         func_index = 0 if to else 1
-        for key, functions in cls._TYPE_COVERSION_MAP.items():
+        for key, functions in cls._TYPE_CONVERSION_MAP.items():
             value = metadata.get(key)
             if value is not None:
                 func = functions[func_index]
