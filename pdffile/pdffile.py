@@ -16,6 +16,7 @@ from pymupdf import Document, mupdf
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from io import BytesIO
 
 PDF_DATE_PREFIX = "D:"
 DATETIME_AWARE_TMPL = "D:%Y%m%d%H%M%S%z"
@@ -155,6 +156,29 @@ class PDFFile:
         """Context close."""
         self.close()
 
+    def save(self):
+        """Save PDF doc to disk."""
+        tmp_path = self._path.with_suffix(self._TMP_SUFFIX)
+        self._doc.save(
+            tmp_path,
+            garbage=4,
+            deflate=True,
+            deflate_images=True,
+            deflate_fonts=True,
+            encryption=mupdf.PDF_ENCRYPT_KEEP,
+            use_objstms=True,
+            pretty=True,
+            no_new_id=True,
+        )
+        tmp_path.replace(self._path)
+
+    def close(self) -> None:
+        """Close the fitz doc."""
+        if self._doc:
+            if self._doc.is_dirty:
+                self.save()
+            self._doc.close()
+
     def namelist(self) -> list[str]:
         """Return sortable zero padded index strings."""
         emb_names = self._doc.embfile_names()
@@ -191,11 +215,6 @@ class PDFFile:
                 page_bytes = self._doc.convert_to_pdf(index, index)
 
         return page_bytes
-
-    def close(self) -> None:
-        """Close the fitz doc."""
-        if self._doc:
-            self._doc.close()
 
     def get_page_count(self) -> int:
         """Get the page count from the doc or the default highnum."""
@@ -235,26 +254,12 @@ class PDFFile:
                     old_metadata[key] = value
         return old_metadata
 
-    def save_metadata(self, metadata: Mapping) -> None:
+    def write_metadata(self, metadata: Mapping) -> None:
         """Set metadata to the pdf doc."""
         preserved_metadata = self._get_preserved_metadata()
         new_metadata = {**preserved_metadata, **metadata}
         converted_metadata = self._convert_metadata(new_metadata, to=False)
         self._doc.set_metadata(converted_metadata)
-
-        tmp_path = self._path.with_suffix(self._TMP_SUFFIX)
-        self._doc.save(
-            tmp_path,
-            garbage=4,
-            deflate=True,
-            deflate_images=True,
-            deflate_fonts=True,
-            encryption=mupdf.PDF_ENCRYPT_KEEP,
-            use_objstms=True,
-            pretty=True,
-            no_new_id=True,
-        )
-        tmp_path.replace(self._path)
 
     def remove(self, name: str):
         """Remove files or pages from the pdf."""
@@ -264,7 +269,7 @@ class PDFFile:
         except ValueError:
             self._doc.embfile_del(name)
 
-    def writestr(self, name: str, buffer: bytes, **_kwargs):
+    def writestr(self, name: str, buffer: bytes | bytearray | BytesIO, **_kwargs):
         """
         Write string to an embedded file.
 
@@ -275,7 +280,9 @@ class PDFFile:
             reason = "Writing PDF pages not implemented."
             raise NotImplementedError(reason)
         except ValueError:
+            if isinstance(buffer, str):
+                buffer = buffer.encode(errors="replace")
             self._doc.embfile_add(name, buffer)
 
     def repack(self):
-        """Noop."""
+        """Noop. Happens during save."""
