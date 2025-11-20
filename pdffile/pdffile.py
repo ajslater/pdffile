@@ -276,3 +276,6 @@ class PDFFile:
             raise NotImplementedError(reason)
         except ValueError:
             self._doc.embfile_add(name, buffer)
+
+    def repack(self):
+        """Noop."""
