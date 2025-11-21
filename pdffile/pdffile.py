@@ -285,4 +285,4 @@ class PDFFile:
             self._doc.embfile_add(name, buffer)
 
     def repack(self):
-        """Noop. Happens during save."""
+        """Noop. For compatibility with zipfile-patch."""
