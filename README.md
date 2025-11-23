@@ -3,9 +3,15 @@
 A ZipFile like API for PDFs using [PyMuPDF](https://pymupdf.readthedocs.io/) as
 a backend.
 
-Look in `pdffile.py` for exposed functions.
+## 📜 News
 
-## Dependencies
+PDFFile has a [NEWS file](NEWS.md) to summarize changes that affect users.
+
+## 🕸️ HTML Docs
+
+[HTML formatted docs are available here](https://pdffile.readthedocs.io)
+
+## 📦 Dependencies
 
 The pymupdf dependency usually has wheels that install a local version of
 libmupdf. But for some platforms (e.g. Windows) it may require libstdc++ and
@@ -13,7 +19,7 @@ c/c++ build tools installed to compile a libmupdf. More detail on this is
 available in the
 [pymupdf docs](https://pymupdf.readthedocs.io/en/latest/installation.html#installation-when-a-suitable-wheel-is-not-available).
 
-## Data Types
+## 🧶 Data Types
 
 MuPDF reads and writes all data types as strings. PDFFile automatically converts
 pdf date strings to python datetimes and pdf/xml boolean strings to python bools
@@ -33,3 +39,13 @@ PYMUPDF_SETUP_PY_LIMITED_API=0 pip install comicbox-pdffile
 
 You will also have to have the `build-essential` and `python3-dev` or equivalent
 packages installed on on your Linux.
+
+## 🛠️ API
+
+Attached to these docs in the navigation header there are some auto generated
+API docs that might be better than nothing. But the code is really small and
+shouldn't be difficult to interpret.
+
+## 🛠 Development
+
+PDFfile code is hosted at [Github](https://github.com/ajslater/pdffile)
