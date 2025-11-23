@@ -8,7 +8,7 @@ from logging import getLogger
 from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
-from zipfile import ZipInfo, _DateTuple
+from zipfile import ZipInfo
 
 from dateutil import parser
 from filetype import guess
@@ -23,7 +23,7 @@ DATETIME_AWARE_TMPL = "D:%Y%m%d%H%M%S%z"
 DATETIME_NAIVE_TMPL = "D:%Y%m%d%H%M%S"
 DATE_TMPL = "D:%Y%m%d"
 DATETIME_TEMPLATES = (DATETIME_AWARE_TMPL, DATETIME_NAIVE_TMPL, DATE_TMPL)
-DEFAULT_DTTM_TUPLE = (1980, 1, 1, 0, 0, 0)
+DEFAULT_DTTM_TUPLE: tuple[int, int, int, int, int, int] = (1980, 1, 1, 0, 0, 0)
 TZ_DELIMITERS = ("+", "-")
 FALSY = {None, "", "false", "0", False}
 LOG = getLogger(__name__)
@@ -80,11 +80,13 @@ class PDFFile:
         return dttm
 
     @classmethod
-    def _pdf_date_to_zipinfo_dttm_tuple(cls, pdf_date) -> _DateTuple:
+    def _pdf_date_to_zipinfo_dttm_tuple(
+        cls, pdf_date
+    ) -> tuple[int, int, int, int, int, int]:
         if pdf_date and (dttm := cls.to_datetime(pdf_date)):
             dttm_tuple = dttm.timetuple()[:6]
         else:
-            dttm_tuple: _DateTuple = DEFAULT_DTTM_TUPLE
+            dttm_tuple = DEFAULT_DTTM_TUPLE
         return dttm_tuple
 
     @staticmethod
@@ -211,8 +213,10 @@ class PDFFile:
         for name in self._doc.embfile_names():
             pdf_info = self._doc.embfile_info(name)
             emb_pdf_mod_date = pdf_info.get("modDate", None)
+            emb_size = pdf_info.get("size", 0)
             emb_mod_dttm_tuple = self._pdf_date_to_zipinfo_dttm_tuple(emb_pdf_mod_date)
             info = ZipInfo(name, emb_mod_dttm_tuple)
+            info.file_size = emb_size
             emb_infos.append(info)
 
         page_infos = [ZipInfo(name, doc_mod_dttm_tuple) for name in self.pagelist()]
