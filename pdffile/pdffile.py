@@ -179,14 +179,16 @@ class PDFFile:
                 self.save()
             self._doc.close()
 
+    def pagelist(self) -> list[str]:
+        """Zero padded page names."""
+        page_count = self.get_page_count()
+        zero_pad = math.floor(math.log10(page_count)) + 1
+        return [f"{i:0{zero_pad}}" for i in range(page_count)]
+
     def namelist(self) -> list[str]:
         """Return sortable zero padded index strings."""
         emb_names = self._doc.embfile_names()
-
-        # Page names
-        page_count = self.get_page_count()
-        zero_pad = math.floor(math.log10(page_count)) + 1
-        page_names = [f"{i:0{zero_pad}}" for i in range(page_count)]
+        page_names = self.pagelist()
         return emb_names + page_names
 
     def infolist(self) -> list[ZipInfo]:
