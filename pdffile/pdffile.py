@@ -8,7 +8,7 @@ from logging import getLogger
 from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
-from zipfile import ZipInfo
+from zipfile import ZipInfo, _DateTuple
 
 from dateutil import parser
 from filetype import guess
@@ -23,6 +23,7 @@ DATETIME_AWARE_TMPL = "D:%Y%m%d%H%M%S%z"
 DATETIME_NAIVE_TMPL = "D:%Y%m%d%H%M%S"
 DATE_TMPL = "D:%Y%m%d"
 DATETIME_TEMPLATES = (DATETIME_AWARE_TMPL, DATETIME_NAIVE_TMPL, DATE_TMPL)
+DEFAULT_DTTM_TUPLE = (1980, 1, 1, 0, 0, 0)
 TZ_DELIMITERS = ("+", "-")
 FALSY = {None, "", "false", "0", False}
 LOG = getLogger(__name__)
@@ -77,6 +78,14 @@ class PDFFile:
             reason = "Unable to parse pdf datetime {pdf_date}."
             raise ValueError(reason)
         return dttm
+
+    @classmethod
+    def _pdf_date_to_zipinfo_dttm_tuple(cls, pdf_date) -> _DateTuple:
+        if pdf_date and (dttm := cls.to_datetime(pdf_date)):
+            dttm_tuple = dttm.timetuple()[:6]
+        else:
+            dttm_tuple: _DateTuple = DEFAULT_DTTM_TUPLE
+        return dttm_tuple
 
     @staticmethod
     def to_pdf_date(value: datetime | str) -> str | None:
@@ -193,15 +202,21 @@ class PDFFile:
 
     def infolist(self) -> list[ZipInfo]:
         """Return ZipFile like infolist."""
-        infos = []
-        for item in self.namelist():
-            try:
-                self.valid_pagenum(item)
-                info = ZipInfo(item)
-            except ValueError:
-                info = self._doc.embfile_info(item)
-            infos.append(info)
-        return infos
+        emb_infos = []
+        doc_pdf_mod_date = (
+            self._doc.metadata.get("modDate", None) if self._doc.metadata else None
+        )
+        doc_mod_dttm_tuple = self._pdf_date_to_zipinfo_dttm_tuple(doc_pdf_mod_date)
+
+        for name in self._doc.embfile_names():
+            pdf_info = self._doc.embfile_info(name)
+            emb_pdf_mod_date = pdf_info.get("modDate", None)
+            emb_mod_dttm_tuple = self._pdf_date_to_zipinfo_dttm_tuple(emb_pdf_mod_date)
+            info = ZipInfo(name, emb_mod_dttm_tuple)
+            emb_infos.append(info)
+
+        page_infos = [ZipInfo(name, doc_mod_dttm_tuple) for name in self.pagelist()]
+        return emb_infos + page_infos
 
     def read(self, filename: str, *, to_pixmap: bool = False) -> bytes:
         """Return a single page pdf doc or pixmap or embedded file."""
