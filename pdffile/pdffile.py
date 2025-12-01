@@ -16,7 +16,6 @@ from pymupdf import Document, mupdf
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
-    from io import BytesIO
 
 PDF_DATE_PREFIX = "D:"
 DATETIME_AWARE_TMPL = "D:%Y%m%d%H%M%S%z"
@@ -290,7 +289,9 @@ class PDFFile:
         except ValueError:
             self._doc.embfile_del(name)
 
-    def writestr(self, name: str, buffer: str | bytes | bytearray | BytesIO, **_kwargs):
+    def writestr(
+        self, name: str, buffer: str | bytes | bytearray | memoryview[int], **_kwargs
+    ):
         """
         Write string to an embedded file.
 
