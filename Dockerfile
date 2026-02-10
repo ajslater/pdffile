@@ -1,4 +1,4 @@
-FROM nikolaik/python-nodejs:python3.13-nodejs23
+FROM nikolaik/python-nodejs:python3.14-nodejs24
 LABEL maintainer="AJ Slater <aj@slater.net>"
 
 # hadolint ignore=DL3008
