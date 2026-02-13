@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from datetime import datetime, timezone
-from logging import getLogger
+from logging import Logger, getLogger
 from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
@@ -13,6 +13,7 @@ from zipfile import ZipInfo
 from dateutil import parser
 from filetype import guess
 from pymupdf import Document, mupdf
+from typing_extensions import Self
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -21,11 +22,15 @@ PDF_DATE_PREFIX = "D:"
 DATETIME_AWARE_TMPL = "D:%Y%m%d%H%M%S%z"
 DATETIME_NAIVE_TMPL = "D:%Y%m%d%H%M%S"
 DATE_TMPL = "D:%Y%m%d"
-DATETIME_TEMPLATES = (DATETIME_AWARE_TMPL, DATETIME_NAIVE_TMPL, DATE_TMPL)
+DATETIME_TEMPLATES: tuple[str, ...] = (
+    DATETIME_AWARE_TMPL,
+    DATETIME_NAIVE_TMPL,
+    DATE_TMPL,
+)
 DEFAULT_DTTM_TUPLE: tuple[int, int, int, int, int, int] = (1980, 1, 1, 0, 0, 0)
 TZ_DELIMITERS = ("+", "-")
-FALSY = {None, "", "false", "0", False}
-LOG = getLogger(__name__)
+FALSY: set[None | bool | str] = {None, "", "false", "0", False}
+LOG: Logger = getLogger(__name__)
 
 
 class PDFFile:
@@ -80,7 +85,7 @@ class PDFFile:
 
     @classmethod
     def _pdf_date_to_zipinfo_dttm_tuple(
-        cls, pdf_date
+        cls, pdf_date: str
     ) -> tuple[int, int, int, int, int, int]:
         if pdf_date and (dttm := cls.to_datetime(pdf_date)):
             dttm_tuple = dttm.timetuple()[:6]
@@ -158,7 +163,7 @@ class PDFFile:
         self._path: Path = path
         self._doc: Document = Document(self._path)
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         """Context enter."""
         return self
 
@@ -166,7 +171,7 @@ class PDFFile:
         """Context close."""
         self.close()
 
-    def save(self):
+    def save(self) -> None:
         """Save PDF doc to disk."""
         tmp_path = self._path.with_suffix(self._TMP_SUFFIX)
         self._doc.save(
@@ -205,13 +210,13 @@ class PDFFile:
         """Return ZipFile like infolist."""
         emb_infos = []
         doc_pdf_mod_date = (
-            self._doc.metadata.get("modDate", None) if self._doc.metadata else None
+            self._doc.metadata.get("modDate", "") if self._doc.metadata else ""
         )
         doc_mod_dttm_tuple = self._pdf_date_to_zipinfo_dttm_tuple(doc_pdf_mod_date)
 
         for name in self._doc.embfile_names():
             pdf_info = self._doc.embfile_info(name)
-            emb_pdf_mod_date = pdf_info.get("modDate", None)
+            emb_pdf_mod_date = pdf_info.get("modDate", "")
             emb_size = pdf_info.get("size", 0)
             emb_mod_dttm_tuple = self._pdf_date_to_zipinfo_dttm_tuple(emb_pdf_mod_date)
             info = ZipInfo(name, emb_mod_dttm_tuple)
@@ -281,7 +286,7 @@ class PDFFile:
         converted_metadata = self._convert_metadata(new_metadata, to=False)
         self._doc.set_metadata(converted_metadata)
 
-    def remove(self, name: str):
+    def remove(self, name: str) -> None:
         """Remove files or pages from the pdf."""
         try:
             page = self.valid_pagenum(name)
@@ -291,7 +296,7 @@ class PDFFile:
 
     def writestr(
         self, name: str, buffer: str | bytes | bytearray | memoryview[int], **_kwargs
-    ):
+    ) -> None:
         """
         Write string to an embedded file.
 
@@ -306,5 +311,5 @@ class PDFFile:
                 buffer = buffer.encode(errors="replace")
             self._doc.embfile_add(name, buffer)
 
-    def repack(self):
+    def repack(self) -> None:
         """Noop. For compatibility with zipfile-patch."""
