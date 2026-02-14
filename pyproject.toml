@@ -28,7 +28,13 @@ Issues = "https://github.com/ajslater/comicbox-pdffile/issues"
 Source = "https://github.com/ajslater/comicbox-pdffile"
 
 [dependency-groups]
-dev = ["icecream~=2.1", "neovim~=0.3", "pyclean~=3.1", "toml-cli~=0.7"]
+dev = [
+    "icecream~=2.1",
+    "infer-types>=1.0.0",
+    "neovim~=0.3",
+    "pyclean~=3.1",
+    "toml-cli~=0.7",
+]
 lint = [
   "basedpyright~=1.30",
   "codespell~=2.4",
