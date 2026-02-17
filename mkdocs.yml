@@ -1,11 +1,12 @@
-site_name: PDFFile
-site_author: AJ
-site_description: A ZipFile like API for PDFs
-theme:
-  name: mkdocs
-  color_mode: dark
-  strict: true
-
+extra_css:
+  - style.css
+markdown_extensions:
+  - smarty
+  - toc:
+      permalink: true
+nav:
+  - NEWS.md
+  - API: $api/pdffile.***
 plugins:
   - minify:
       minify_html: true
@@ -18,12 +19,10 @@ plugins:
         - style.css
   - search
   - mkapi
-markdown_extensions:
-  - smarty
-  - toc:
-      permalink: true
-extra_css:
-  - style.css
-nav:
-  - NEWS.md
-  - API: $api/pdffile.***
+site_author: AJ
+site_description: A ZipFile like API for PDFs
+site_name: PDFFile
+theme:
+  color_mode: dark
+  name: mkdocs
+  strict: true
