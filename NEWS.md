@@ -1,6 +1,6 @@
 # 📰 PDFFile News
 
-## v0.4.0
+## v0.4.0 - Extract unaltered images
 
 - read() also extract original image files. Format now specified with an string.
   File extension passed back in an optional props dict.
