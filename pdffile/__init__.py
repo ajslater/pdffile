@@ -235,23 +235,24 @@ class PDFFile:
         page_infos = [ZipInfo(name, doc_mod_dttm_tuple) for name in self.pagelist()]
         return emb_infos + page_infos
 
-    def read_image(self, index: int):
+    def read_image(self, index: int) -> tuple[bytes, str]:
         """Read first image from page in original format."""
         first_image = self._doc.get_page_images(index, full=True)[0]
         xref = first_image[0]
         image_dict = self._doc.extract_image(xref)
         return image_dict["image"], image_dict["ext"]
 
-    def read_pixmap(self, index: int):
+    def read_pixmap(self, index: int) -> tuple[bytes, str]:
         """Convert page to pixmap."""
         pix = self._doc.get_page_pixmap(index)
-        return pix.tobytes(output="ppm"), "ppm"
+        output = "ppm"
+        return pix.tobytes(output=output), output
 
-    def read_pdf(self, index: int):
+    def read_pdf(self, index: int) -> tuple[bytes, str]:
         """Read a pdf page as complete one page pdf."""
         return self._doc.convert_to_pdf(index, index), "pdf"
 
-    def read_embedded_file(self, filename: str):
+    def read_embedded_file(self, filename: str) -> tuple[bytes, str]:
         """Read embedded file."""
         return self._doc.embfile_get(filename), Path(filename).suffix[:1]
 
