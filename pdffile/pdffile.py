@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from datetime import datetime, timezone
+from enum import Enum
 from logging import Logger, getLogger
 from pathlib import Path
 from types import MappingProxyType
@@ -47,6 +48,13 @@ class PDFFile:
         "modDate",
         "trapped",
     )
+
+    class PageFormat(Enum):
+        """Read Format."""
+
+        PDF = 0
+        IMAGE = 1
+        PIXMAP = 2
 
     @staticmethod
     def valid_pagenum(name: str) -> int:
@@ -226,19 +234,43 @@ class PDFFile:
         page_infos = [ZipInfo(name, doc_mod_dttm_tuple) for name in self.pagelist()]
         return emb_infos + page_infos
 
-    def read(self, filename: str, *, to_pixmap: bool = False) -> bytes:
-        """Return a single page pdf doc or pixmap or embedded file."""
+    def read_image(self, index: int):
+        """Read first image from page in original format."""
+        xref = self._doc.get_page_images(index)[0]
+        image = self._doc.extract_image(xref)
+        return image["image"]
+
+    def read_pixmap(self, index: int):
+        """Convert page to pixmap."""
+        pix = self._doc.get_page_pixmap(index)
+        return pix.tobytes(output="ppm")
+
+    def read_pdf(self, index: int):
+        """Read a pdf page as complete one page pdf."""
+        return self._doc.convert_to_pdf(index, index)
+
+    def read_embedded_file(self, filename: str):
+        """Read embedded file."""
+        return self._doc.embfile_get(filename)
+
+    def read(self, filename: str, fmt: PageFormat = PageFormat.PDF) -> bytes:
+        """Return a single page pdf doc, image or pixmap or embedded file."""
         try:
             index = self.valid_pagenum(filename)
-        except ValueError:
-            page_bytes = self._doc.embfile_get(filename)
-        else:
-            if to_pixmap:
-                pix = self._doc.get_page_pixmap(index)
-                page_bytes = pix.tobytes(output="ppm")
+            if fmt == self.PageFormat.IMAGE:
+                try:
+                    page_bytes = self.read_image(index)
+                except Exception as exc:
+                    LOG.warning(
+                        f"Unable to extract first image from page, converting to pixmap: {exc}"
+                    )
+                    page_bytes = self.read_pixmap(index)
+            elif fmt == self.PageFormat.PIXMAP:
+                page_bytes = self.read_pixmap(index)
             else:
-                page_bytes = self._doc.convert_to_pdf(index, index)
-
+                page_bytes = self.read_pdf(index)
+        except ValueError:
+            page_bytes = self.read_embedded_file(filename)
         return page_bytes
 
     def get_page_count(self) -> int:

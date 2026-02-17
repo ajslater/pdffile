@@ -1,5 +1,13 @@
 # 📰 PDFFile News
 
+## v0.4.0
+
+- read() also extract original image files. Format now specified with an enum.
+- read_image() reads the first image on a page in the original format
+- read_pixmap() converts the page to a ppm.
+- read_pdf() converts the page into a one page pdf.
+- read_embedded_file() reads a named embedded file
+
 ## v0.3.0 - Embedded File Support
 
 - namelist() lists embedded files.
