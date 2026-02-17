@@ -13,7 +13,8 @@ RUN apt-get clean \
 WORKDIR /app
 
 COPY cfg ./cfg
-COPY package.json package-lock.json pyproject.toml uv.lock Makefile README.md pdffile ./
+COPY pdffile ./pdffile
+COPY package.json package-lock.json pyproject.toml uv.lock Makefile README.md ./
 RUN make install
 
 COPY . .
