@@ -3,6 +3,7 @@
 ## v0.4.0
 
 - read() also extract original image files. Format now specified with an enum.
+  File extension passed back in an optional props dict.
 - read_image() reads the first image on a page in the original format
 - read_pixmap() converts the page to a ppm.
 - read_pdf() converts the page into a one page pdf.
