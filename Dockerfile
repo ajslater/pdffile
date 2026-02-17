@@ -13,6 +13,7 @@ RUN apt-get clean \
 WORKDIR /app
 
 COPY bin ./bin
+COPY cfg ./cfg
 COPY .gitignore .prettierignore .remarkignore eslint.config.js package.json package-lock.json pyproject.toml uv.lock Makefile ./
 RUN make install-all
 
