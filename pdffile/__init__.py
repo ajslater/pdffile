@@ -28,6 +28,7 @@ DATETIME_TEMPLATES: tuple[str, ...] = (
     DATETIME_NAIVE_TMPL,
     DATE_TMPL,
 )
+EPOCH_START = datetime.fromtimestamp(0, tz=timezone.utc)
 DEFAULT_DTTM_TUPLE: tuple[int, int, int, int, int, int] = (1980, 1, 1, 0, 0, 0)
 TZ_DELIMITERS = ("+", "-")
 FALSY: set[None | bool | str] = {None, "", "false", "0", False}
@@ -74,7 +75,7 @@ class PDFFile:
         if not pdf_date or not pdf_date.startswith(PDF_DATE_PREFIX):
             return None
         dt_str = pdf_date.replace("'", "")
-        dt_str = dt_str.replace("Z", "+")
+        dt_str = dt_str.replace("+", "Z")
         last_exc = None
         dttm = None
         for template in DATETIME_TEMPLATES:
@@ -86,20 +87,26 @@ class PDFFile:
             except ValueError as exc:
                 last_exc = exc
         if not dttm:
-            if last_exc:
-                raise last_exc
-            reason = "Unable to parse pdf datetime {pdf_date}."
-            raise ValueError(reason)
+            dttm = EPOCH_START
+            reason = f"Unable to parse PDF datetime {pdf_date}, using start of epoch"
+            reason += f": {last_exc}" if last_exc else "."
+            LOG.warning(reason)
         return dttm
 
     @classmethod
     def _pdf_date_to_zipinfo_dttm_tuple(
         cls, pdf_date: str
     ) -> tuple[int, int, int, int, int, int]:
-        if pdf_date and (dttm := cls.to_datetime(pdf_date)):
-            dttm_tuple = dttm.timetuple()[:6]
-        else:
+        try:
+            if pdf_date and (dttm := cls.to_datetime(pdf_date)):
+                dttm_tuple = dttm.timetuple()[:6]
+            else:
+                dttm_tuple = DEFAULT_DTTM_TUPLE
+        except Exception as exc:
             dttm_tuple = DEFAULT_DTTM_TUPLE
+            reason = f"Unable to convert pdf datetime {pdf_date} to ZipInfo datetime tuple, using default. {exc}."
+            LOG.warning(reason)
+
         return dttm_tuple
 
     @staticmethod

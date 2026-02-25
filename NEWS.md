@@ -1,6 +1,13 @@
 # 📰 PDFFile News
 
-## v0.4.0
+## v0.4.1
+
+- Fix reading PDF metadata breaking on datetimes.
+- Unreadable or unconvertable PDF datetimes are substituted with the start of
+  the epoch and log a warning instead of raising an exception and abandoning
+  parsing.
+
+## v0.4.0 - Extract unaltered images
 
 - read() also extract original image files. Format now specified with an string.
   File extension passed back in an optional props dict.
