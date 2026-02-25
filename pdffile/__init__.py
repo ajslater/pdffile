@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timezone
 from enum import Enum
 from logging import Logger, getLogger
 from pathlib import Path
@@ -11,26 +10,16 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 from zipfile import ZipInfo
 
-from dateutil import parser
 from filetype import guess
 from pymupdf import Document, mupdf
 from typing_extensions import Self
 
+from pdffile.datetimes import to_datetime, to_pdf_date, to_zipinfo_timetuple
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from datetime import datetime
 
-PDF_DATE_PREFIX = "D:"
-DATETIME_AWARE_TMPL = "D:%Y%m%d%H%M%S%z"
-DATETIME_NAIVE_TMPL = "D:%Y%m%d%H%M%S"
-DATE_TMPL = "D:%Y%m%d"
-DATETIME_TEMPLATES: tuple[str, ...] = (
-    DATETIME_AWARE_TMPL,
-    DATETIME_NAIVE_TMPL,
-    DATE_TMPL,
-)
-EPOCH_START = datetime.fromtimestamp(0, tz=timezone.utc)
-DEFAULT_DTTM_TUPLE: tuple[int, int, int, int, int, int] = (1980, 1, 1, 0, 0, 0)
-TZ_DELIMITERS = ("+", "-")
 FALSY: set[None | bool | str] = {None, "", "false", "0", False}
 LOG: Logger = getLogger(__name__)
 
@@ -70,79 +59,12 @@ class PDFFile:
     @staticmethod
     def to_datetime(pdf_date: str) -> datetime | None:
         """Convert a PDF date string to a datetime."""
-        if isinstance(pdf_date, datetime):
-            return pdf_date
-        if not pdf_date or not pdf_date.startswith(PDF_DATE_PREFIX):
-            return None
-        dt_str = pdf_date.replace("'", "")
-        dt_str = dt_str.replace("+", "Z")
-        last_exc = None
-        dttm = None
-        for template in DATETIME_TEMPLATES:
-            try:
-                dttm = datetime.strptime(dt_str, template)  # noqa: DTZ007
-                if not dttm.tzinfo:
-                    dttm.replace(tzinfo=timezone.utc)
-                break
-            except ValueError as exc:
-                last_exc = exc
-        if not dttm:
-            dttm = EPOCH_START
-            reason = f"Unable to parse PDF datetime {pdf_date}, using start of epoch"
-            reason += f": {last_exc}" if last_exc else "."
-            LOG.warning(reason)
-        return dttm
-
-    @classmethod
-    def _pdf_date_to_zipinfo_dttm_tuple(
-        cls, pdf_date: str
-    ) -> tuple[int, int, int, int, int, int]:
-        try:
-            if pdf_date and (dttm := cls.to_datetime(pdf_date)):
-                dttm_tuple = dttm.timetuple()[:6]
-            else:
-                dttm_tuple = DEFAULT_DTTM_TUPLE
-        except Exception as exc:
-            dttm_tuple = DEFAULT_DTTM_TUPLE
-            reason = f"Unable to convert pdf datetime {pdf_date} to ZipInfo datetime tuple, using default. {exc}."
-            LOG.warning(reason)
-
-        return dttm_tuple
+        return to_datetime(pdf_date)
 
     @staticmethod
     def to_pdf_date(value: datetime | str) -> str | None:
         """Convert a datetime to a PDF date string."""
-        if not value:
-            return None
-
-        if isinstance(value, str):
-            if value.startswith(PDF_DATE_PREFIX):
-                return value
-            dttm = parser.parse(value)
-        else:
-            dttm = value
-
-        if not dttm.tzinfo:
-            dttm.replace(tzinfo=timezone.utc)
-
-        dttm_str = dttm.strftime(DATETIME_AWARE_TMPL)
-
-        # Separate timezone and convert to PDF offset string
-        for delimiter in TZ_DELIMITERS:
-            parts = dttm_str.split(delimiter)
-            if len(parts) > 1:
-                dttm_str, tz_str = parts
-                h = tz_str[:2]
-                m = tz_str[2:4]
-                break
-        else:
-            # Default
-            delimiter = "+"
-            h = m = "00"
-        offset_str = f"{h}'{m}'"
-
-        # Recombine with PDF offset str.
-        return f"{dttm_str}{delimiter}{offset_str}"
+        return to_pdf_date(value)
 
     @staticmethod
     def to_bool(value: Any) -> bool:
@@ -228,13 +150,13 @@ class PDFFile:
         doc_pdf_mod_date = (
             self._doc.metadata.get("modDate", "") if self._doc.metadata else ""
         )
-        doc_mod_dttm_tuple = self._pdf_date_to_zipinfo_dttm_tuple(doc_pdf_mod_date)
+        doc_mod_dttm_tuple = to_zipinfo_timetuple(doc_pdf_mod_date)
 
         for name in self._doc.embfile_names():
             pdf_info = self._doc.embfile_info(name)
             emb_pdf_mod_date = pdf_info.get("modDate", "")
             emb_size = pdf_info.get("size", 0)
-            emb_mod_dttm_tuple = self._pdf_date_to_zipinfo_dttm_tuple(emb_pdf_mod_date)
+            emb_mod_dttm_tuple = to_zipinfo_timetuple(emb_pdf_mod_date)
             info = ZipInfo(name, emb_mod_dttm_tuple)
             info.file_size = emb_size
             emb_infos.append(info)

@@ -1,5 +1,10 @@
 # 📰 PDFFile News
 
+## v0.5.0
+
+- Refactor all datetime processing and move to a utility file.
+- API unchanged.
+
 ## v0.4.1
 
 - Fix reading PDF metadata breaking on datetimes.
