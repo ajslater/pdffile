@@ -18,7 +18,7 @@ readme = "README.md"
 license = "GPL-3.0-only"
 name = "comicbox-pdffile"
 requires-python = "<4.0,>=3.10"
-version = "0.4.0"
+version = "0.4.1"
 [[project.authors]]
 name = "AJ Slater"
 email = "aj@slater.net"

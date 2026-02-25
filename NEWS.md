@@ -1,5 +1,9 @@
 # 📰 PDFFile News
 
+## v0.4.1
+
+- Fix reading PDF metadata breaking on datetimes.
+
 ## v0.4.0 - Extract unaltered images
 
 - read() also extract original image files. Format now specified with an string.

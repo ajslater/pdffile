@@ -74,7 +74,7 @@ class PDFFile:
         if not pdf_date or not pdf_date.startswith(PDF_DATE_PREFIX):
             return None
         dt_str = pdf_date.replace("'", "")
-        dt_str = dt_str.replace("Z", "+")
+        dt_str = dt_str.replace("+", "Z")
         last_exc = None
         dttm = None
         for template in DATETIME_TEMPLATES:
