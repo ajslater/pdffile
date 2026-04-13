@@ -1,21 +1,13 @@
 services:
-  pdffile-builder:
-    build: .
-    image: pdffile-builder
-    container_name: pdffile-builder
-  pdffile-lint:
-    image: pdffile-builder
-    container_name: pdffile-lint
-    command: make lint
-  pdffile-test:
-    image: pdffile-builder
-    container_name: pdffile-test
-    command: make test
+  ci:
+    build:
+      context: .
+      target: pdffile-ci
+    image: pdffile-ci:ci
+    container_name: pdffile-ci
     volumes:
-      - ./test-results/:/app/test-results/
-  pdffile-build:
-    image: pdffile-builder
-    container_name: pdffile-build
-    volumes:
-      - ./dist/:/app/dist/
-    command: uv build
+      - ./test-results:/app/test-results
+      - ./dist:/app/dist
+    environment:
+      - PYTHONUNBUFFERED=1
+    entrypoint: [sleep, infinity]
