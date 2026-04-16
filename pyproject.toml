@@ -79,6 +79,7 @@ source-include = [
   "Makefile",
   "NEWS.md",
   "bin/**",
+  "bun.lock",
   "ci/**",
   "compose.yaml",
   "docs/DOCKER.md",
@@ -142,7 +143,7 @@ reportUnusedParameter = false
 builtin = "clear,code,rare"
 check-hidden = true
 ignore-words-list = "coverd,falsy,jupyter,ro,searchd,searched,thead,versio,ws"
-skip = "*~,.*,./dist,./node_modules,./package-lock.json,./package.json,./test-results,./uv.lock,/uv.lock"
+skip = "*~,.*,./bun.lock,./dist,./node_modules,./package-lock.json,./package.json,./test-results,./uv.lock,/uv.lock"
 
 [tool.complexipy]
 failed = true

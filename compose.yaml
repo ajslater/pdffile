@@ -3,11 +3,13 @@ services:
     build:
       context: .
       target: pdffile-ci
-    image: pdffile-ci:ci
     container_name: pdffile-ci
+    entrypoint:
+      - sleep
+      - infinity
+    environment:
+      - PYTHONUNBUFFERED=1
+    image: pdffile-ci:ci
     volumes:
       - ./test-results:/app/test-results
       - ./dist:/app/dist
-    environment:
-      - PYTHONUNBUFFERED=1
-    entrypoint: [sleep, infinity]
