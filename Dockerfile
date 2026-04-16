@@ -10,11 +10,14 @@ RUN apt-get clean \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# hadolint ignore=DL4006
+RUN curl -fsSL https://bun.com/install | bash
+
 WORKDIR /app
 
 COPY cfg ./cfg
 COPY pdffile ./pdffile
-COPY bun.lock package.json package-lock.json pyproject.toml uv.lock Makefile README.md ./
+COPY bun.lock package.json pyproject.toml uv.lock Makefile README.md ./
 RUN make install
 
 COPY . .
