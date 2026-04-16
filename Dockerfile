@@ -14,7 +14,7 @@ WORKDIR /app
 
 COPY cfg ./cfg
 COPY pdffile ./pdffile
-COPY package.json package-lock.json pyproject.toml uv.lock Makefile README.md ./
+COPY bun.lock package.json package-lock.json pyproject.toml uv.lock Makefile README.md ./
 RUN make install
 
 COPY . .
