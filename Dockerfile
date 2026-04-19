@@ -16,9 +16,8 @@ COPY --from=bun-source /usr/local/bin/bunx /usr/local/bin/bunx
 
 WORKDIR /app
 
-COPY cfg ./cfg
-COPY pdffile ./pdffile
-COPY bun.lock package.json pyproject.toml uv.lock Makefile README.md ./
-RUN make install
+COPY bun.lock package.json ./
+RUN bun install
 
 COPY . .
+RUN make install
