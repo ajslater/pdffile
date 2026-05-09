@@ -1,5 +1,21 @@
 # 📰 PDFFile News
 
+## v0.6.1 - Auto-DPI for full-page rasterization
+
+- New `choose_pixmap_dpi(page)` picks a render DPI matching the page's
+  embedded-image resolution. Walks each image, computes its native placed DPI
+  from the pixel dimensions and bbox, returns the highest value clamped to
+  `[DEFAULT_PIXMAP_DPI, MAX_PIXMAP_DPI]` (150–300). Pages with no images return
+  the default. Tiny tracking pixels and decorative dots are filtered via
+  `min_bbox_fraction`.
+- `PDFFile.read_full_pixmap_jpeg(index, dpi=None)` now defaults to the
+  auto-picked DPI; pass an integer to override. Existing callers see slightly
+  higher rendering quality on multi-image pages and a consistent 150 DPI floor
+  on pure vector pages — comic-resolution output by default instead of the
+  previous 72 DPI.
+- New module-level constants `DEFAULT_PIXMAP_DPI = 150` and
+  `MAX_PIXMAP_DPI = 300`.
+
 ## v0.6.0 - Image-dominant page detection
 
 - Features
