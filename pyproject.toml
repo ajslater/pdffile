@@ -17,7 +17,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "GPL-3.0-only"
 name = "comicbox-pdffile"
-version = "0.5.2"
+version = "0.6.0"
 [[project.authors]]
 name = "AJ Slater"
 email = "aj@slater.net"
@@ -33,6 +33,7 @@ dev = [
   "icecream~=2.1",
   "infer-types~=1.0.0",
   "neovim~=0.3",
+  "pillow>=12.2.0",
   "pyclean~=3.1",
   "pypi-cleanup~=0.1.10",
   "semver~=3.0.4",

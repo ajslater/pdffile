@@ -14,11 +14,28 @@ from filetype import guess
 from pymupdf import Document, mupdf
 from typing_extensions import Self
 
+from pdffile._image_serve import (
+    PDF_FALLBACK_VERDICT,
+    PageMode,
+    PageVerdict,
+    classify_page,
+    extract_full_pixmap_jpeg,
+    extract_image,
+)
 from pdffile.datetimes import to_datetime, to_pdf_date, to_zipinfo_timetuple
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
     from datetime import datetime
+
+__all__ = (
+    "FALSY",
+    "PDF_FALLBACK_VERDICT",
+    "PDFFile",
+    "PageFormat",
+    "PageMode",
+    "PageVerdict",
+)
 
 FALSY: set[None | bool | str] = {None, "", "false", "0", False}
 LOG: Logger = getLogger(__name__)
@@ -30,6 +47,13 @@ class PageFormat(Enum):
     PDF = "pdf"
     IMAGE = "image"
     PIXMAP = "pixmap"
+    #: Browser-renderable image when the page is image-dominant; falls
+    #: through to ``PDF`` when the detector declines. Caller distinguishes
+    #: the two by inspecting the ``ext`` written to ``props``.
+    IMAGE_IF_DOMINANT = "image_if_dominant"
+    #: Whole-page rasterization to RGB JPEG. Use when callers need an
+    #: always-image response for any page (e.g. force-image override).
+    PIXMAP_JPEG = "pixmap_jpeg"
 
 
 class PDFFile:
@@ -177,6 +201,59 @@ class PDFFile:
         output = "ppm"
         return pix.tobytes(output=output), output
 
+    def classify_page(self, index: int) -> PageVerdict:
+        """
+        Decide how page ``index`` should be served.
+
+        Returns a :class:`PageVerdict`. ``PageMode.PDF_FALLBACK``
+        means the caller should use the regular PDF path; the other
+        modes mean the page is image-dominant and can be served as
+        raw image bytes via :meth:`read_image_if_dominant`.
+
+        Cheap — runs on parsed PDF metadata, single-digit milliseconds
+        per page even on text-heavy documents.
+        """
+        return classify_page(self._doc, index)
+
+    def read_image_if_dominant(self, index: int) -> tuple[bytes, str] | None:
+        """
+        Return ``(bytes, ext)`` if page is image-dominant, else ``None``.
+
+        ``ext`` is the embedded image's encoding ('jpeg', 'png',
+        'webp') for ``IMAGE_DIRECT`` verdicts, or 'jpeg' for
+        ``IMAGE_TRANSCODE`` verdicts (CMYK / JBIG2 / rotated pages
+        re-encoded via Pixmap).
+
+        ``None`` means the caller should use :meth:`read_pdf` (or
+        another fallback path) — the page has vector content that
+        would be lost in a raw-image serve.
+        """
+        verdict = self.classify_page(index)
+        if verdict.mode is PageMode.PDF_FALLBACK:
+            return None
+        return extract_image(self._doc, verdict)
+
+    def read_full_pixmap_jpeg(self, index: int) -> tuple[bytes, str]:
+        """
+        Render the whole page to RGB JPEG.
+
+        Faster than :meth:`read_pixmap` for browser callers (PPM is
+        not browser-renderable; PIL would need to be in the loop to
+        transcode). Tries the cheap embedded-image path first when
+        the page happens to be image-dominant.
+
+        Always succeeds for valid pages — raises if PyMuPDF can't
+        render the page at all.
+        """
+        cheap = self.read_image_if_dominant(index)
+        if cheap is not None:
+            return cheap
+        result = extract_full_pixmap_jpeg(self._doc, index)
+        if result is None:
+            reason = f"pdffile full pixmap render failed for page {index}"
+            raise RuntimeError(reason)
+        return result
+
     def read_pdf(self, index: int) -> tuple[bytes, str]:
         """
         Read a pdf page as a complete one-page pdf.
@@ -207,7 +284,11 @@ class PDFFile:
         """
         Return a single page pdf doc, image or pixmap or embedded file.
 
-        If a props dict is passed in, the read file extension is written it on the 'ext' key.
+        If a props dict is passed in, the read file extension is
+        written to the ``ext`` key. For ``IMAGE_IF_DOMINANT`` callers
+        inspect ``ext`` to distinguish a successful image serve
+        (``jpeg``/``png``/``webp``) from the PDF fall-through
+        (``pdf``).
         """
         try:
             if not fmt:
@@ -223,6 +304,14 @@ class PDFFile:
                     page_bytes, ext = self.read_pixmap(index)
             elif fmt == PageFormat.PIXMAP.value:
                 page_bytes, ext = self.read_pixmap(index)
+            elif fmt == PageFormat.IMAGE_IF_DOMINANT.value:
+                served = self.read_image_if_dominant(index)
+                if served is not None:
+                    page_bytes, ext = served
+                else:
+                    page_bytes, ext = self.read_pdf(index)
+            elif fmt == PageFormat.PIXMAP_JPEG.value:
+                page_bytes, ext = self.read_full_pixmap_jpeg(index)
             else:
                 page_bytes, ext = self.read_pdf(index)
         except ValueError:
