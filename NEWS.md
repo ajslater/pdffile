@@ -1,5 +1,28 @@
 # 📰 PDFFile News
 
+## v0.6.0 - Image-dominant page detection
+
+- Features
+    - New `PDFFile.classify_page(index)` returns a `PageVerdict` describing how
+      the page should be served: `IMAGE_DIRECT` (embedded image is browser-safe
+      as-stored), `IMAGE_TRANSCODE` (embedded image needs RGB-JPEG re-encoding —
+      CMYK, JBIG2, JPEG 2000, rotated pages), or `PDF_FALLBACK` (page has vector
+      content; serve through the PDF path). Detection runs on parsed metadata —
+      no rasterization — and costs single-digit milliseconds per page.
+    - New `PDFFile.read_image_if_dominant(index)` returns `(bytes, ext)` for
+      image-dominant pages or `None` for fall-through, letting browser readers
+      serve comic-style PDFs as plain `<img>` instead of going through pdf.js.
+    - New `PDFFile.read_full_pixmap_jpeg(index)` renders any page to RGB JPEG
+      for callers that need an always-image response.
+    - New `PageFormat.IMAGE_IF_DOMINANT` and `PageFormat.PIXMAP_JPEG` values for
+      the `read()` interface.
+
+- Fixes
+    - `read_pdf` passes `no_new_id=True` to `tobytes()` so single-page PDF
+      output is deterministic across calls. Without this, pymupdf stamps a fresh
+      random `/ID` array on every save and byte-equality fixtures break on every
+      run.
+
 ## v0.5.1
 
 - Extract PDF pages as originals rather than recomposing them. Fixes a bug where
