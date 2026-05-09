@@ -1,5 +1,11 @@
 # 📰 PDFFile News
 
+## v0.5.2
+
+- `read_pdf` passes `no_new_id=True` to `tobytes()` so single-page PDF output
+  is deterministic across calls. Without this, pymupdf stamps a fresh random
+  `/ID` array on every save and byte-equality fixtures break on every run.
+
 ## v0.5.1
 
 - Extract PDF pages as originals rather than recomposing them. Fixes a bug where

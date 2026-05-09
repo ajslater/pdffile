@@ -194,7 +194,10 @@ class PDFFile:
         """
         out = Document()
         out.insert_pdf(self._doc, from_page=index, to_page=index)
-        return out.tobytes(), "pdf"
+        # ``no_new_id=True`` keeps output deterministic across calls; without
+        # it pymupdf stamps a fresh random ``/ID`` array on every save and
+        # downstream byte-equality fixtures churn on every test run.
+        return out.tobytes(no_new_id=True), "pdf"
 
     def read_embedded_file(self, filename: str) -> tuple[bytes, str]:
         """Read embedded file."""
