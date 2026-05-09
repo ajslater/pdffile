@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
     from datetime import datetime
 
+    from pymupdf import Page
+
 FALSY: set[None | bool | str] = {None, "", "false", "0", False}
 LOG: Logger = getLogger(__name__)
 
@@ -171,25 +173,97 @@ class PDFFile:
         image_dict = self._doc.extract_image(xref)
         return image_dict["image"], image_dict["ext"]
 
-    def read_pixmap(self, index: int) -> tuple[bytes, str]:
-        """Convert page to pixmap."""
-        pix = self._doc.get_page_pixmap(index)
+    @staticmethod
+    def _prepend_invisible_text_op(doc: Document, page: Page) -> None:
+        """
+        Prepend ``3 Tr`` to ``page``'s ``/Contents``.
+
+        ``3 Tr`` sets text rendering mode 3 (invisible) at the start of
+        the page's graphics state. Any text-showing operator that runs
+        afterwards still consumes the operands and advances the text
+        matrix — so PDF text extraction still works — but no glyphs
+        are drawn. Useful for badly-OCR'd PDFs that draw OCR text with
+        the default (visible) rendering mode on top of an already-
+        rasterized page, doubling the text under any renderer that
+        respects the content stream.
+        """
+        new_xref = doc.get_new_xref()
+        doc.update_object(new_xref, "<<>>")
+        doc.update_stream(new_xref, b"3 Tr\n")
+        original_xrefs = page.get_contents()
+        new_array = (
+            "[" + " ".join(f"{x} 0 R" for x in [new_xref, *original_xrefs]) + "]"
+        )
+        doc.xref_set_key(page.xref, "Contents", new_array)
+
+    @classmethod
+    def _hide_text_in_pdf_bytes(cls, pdf_bytes: bytes) -> bytes:
+        """
+        Return ``pdf_bytes`` with ``3 Tr`` prepended to every page.
+
+        Operates on a fresh ``Document`` opened from ``pdf_bytes`` so
+        ``self._doc`` is never mutated — important because ``close()``
+        flushes a dirty doc back to disk.
+        """
+        with Document(stream=pdf_bytes, filetype="pdf") as out:
+            for page in out:
+                cls._prepend_invisible_text_op(out, page)
+            return out.tobytes()
+
+    def read_pixmap(self, index: int, *, hide_text: bool = False) -> tuple[bytes, str]:
+        """
+        Convert page to pixmap.
+
+        With ``hide_text=True``, suppress visible text rendering so a
+        rasterized OCR overlay doesn't double up against the page's
+        baked-in scan.
+        """
         output = "ppm"
+        if hide_text:
+            # Build a one-page copy via convert_to_pdf, hide text in
+            # the copy, render. Avoids mutating ``self._doc`` (which
+            # would dirty it and trigger a save on close).
+            pdf_bytes = self._hide_text_in_pdf_bytes(
+                self._doc.convert_to_pdf(index, index)
+            )
+            with Document(stream=pdf_bytes, filetype="pdf") as tmp:
+                pix = tmp[0].get_pixmap()
+        else:
+            pix = self._doc.get_page_pixmap(index)
         return pix.tobytes(output=output), output
 
-    def read_pdf(self, index: int) -> tuple[bytes, str]:
-        """Read a pdf page as complete one page pdf."""
-        return self._doc.convert_to_pdf(index, index), "pdf"
+    def read_pdf(self, index: int, *, hide_text: bool = False) -> tuple[bytes, str]:
+        """
+        Read a pdf page as complete one page pdf.
+
+        With ``hide_text=True``, the returned PDF renders text in mode
+        3 (invisible) — text content is still extractable / selectable
+        but won't be drawn on top of the page's raster.
+        """
+        pdf_bytes = self._doc.convert_to_pdf(index, index)
+        if hide_text:
+            pdf_bytes = self._hide_text_in_pdf_bytes(pdf_bytes)
+        return pdf_bytes, "pdf"
 
     def read_embedded_file(self, filename: str) -> tuple[bytes, str]:
         """Read embedded file."""
         return self._doc.embfile_get(filename), Path(filename).suffix[:1]
 
-    def read(self, filename: str, fmt: str = "", props: dict | None = None) -> bytes:
+    def read(
+        self,
+        filename: str,
+        fmt: str = "",
+        props: dict | None = None,
+        *,
+        hide_text: bool = False,
+    ) -> bytes:
         """
         Return a single page pdf doc, image or pixmap or embedded file.
 
         If a props dict is passed in, the read file extension is written it on the 'ext' key.
+        ``hide_text`` is forwarded to ``read_pdf`` / ``read_pixmap``;
+        the embedded-image and embedded-file paths ignore it (those
+        bypass the content stream entirely).
         """
         try:
             if not fmt:
@@ -202,11 +276,11 @@ class PDFFile:
                     LOG.warning(
                         f"Unable to extract first image from page, converting to pixmap: {exc}"
                     )
-                    page_bytes, ext = self.read_pixmap(index)
+                    page_bytes, ext = self.read_pixmap(index, hide_text=hide_text)
             elif fmt == PageFormat.PIXMAP.value:
-                page_bytes, ext = self.read_pixmap(index)
+                page_bytes, ext = self.read_pixmap(index, hide_text=hide_text)
             else:
-                page_bytes, ext = self.read_pdf(index)
+                page_bytes, ext = self.read_pdf(index, hide_text=hide_text)
         except ValueError:
             page_bytes, ext = self.read_embedded_file(filename)
         if props is not None:
