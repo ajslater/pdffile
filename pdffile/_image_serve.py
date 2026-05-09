@@ -55,6 +55,24 @@ BROWSER_NATIVE_EXTS: Final[frozenset[str]] = frozenset({"jpeg", "jpg", "png", "w
 #: CMYK (4) and exotic colorspaces require a transcode.
 BROWSER_NATIVE_COLORSPACES: Final[frozenset[int]] = frozenset({1, 3})
 
+#: Default DPI when no embedded image gives us a native-resolution
+#: signal (pure vector text pages, etc). 150 DPI matches the bottom
+#: of the typical CBZ resolution range and renders sharp on most
+#: displays without producing wasteful file sizes.
+DEFAULT_PIXMAP_DPI: Final[int] = 150
+
+#: Hard upper bound on auto-detected DPI. Without this, a single tiny
+#: high-DPI logo on a page can demand a multi-thousand-pixel render.
+#: Past 300 DPI browsers can't show the detail and file sizes get
+#: actively bad on mobile.
+MAX_PIXMAP_DPI: Final[int] = 300
+
+#: Embedded images smaller than this fraction of the page rect are
+#: ignored when computing native DPI. Filters out 1-px tracking
+#: pixels and decorative dots that would otherwise drag the
+#: measurement around.
+MIN_DPI_BBOX_FRACTION: Final[float] = 0.001
+
 
 # ── Public types ──────────────────────────────────────────────────
 
@@ -223,8 +241,56 @@ def extract_image(
     return None
 
 
+def choose_pixmap_dpi(
+    page: pymupdf.Page,
+    *,
+    default: int = DEFAULT_PIXMAP_DPI,
+    cap: int = MAX_PIXMAP_DPI,
+    min_bbox_fraction: float = MIN_DPI_BBOX_FRACTION,
+) -> int:
+    """
+    Pick a render DPI matching the page's embedded-image resolution.
+
+    Walks the page's images and computes each one's *native* placed
+    DPI from its pixel dimensions and bbox. Returns the highest value
+    seen across non-negligible images, clamped to ``[default, cap]``.
+    Pages with no images (pure vector text) return ``default``.
+
+    The cap exists because a single tiny high-DPI logo on a large
+    page would otherwise demand a multi-thousand-pixel render. The
+    bbox-fraction filter ignores 1-px tracking pixels and decorative
+    dots that would distort the measurement.
+    """
+    page_area = page.rect.width * page.rect.height
+    if not page_area:
+        return default
+    best = default
+    for img in page.get_images(full=True):
+        img_w, img_h = img[2], img[3]
+        if not img_w or not img_h:
+            continue
+        try:
+            # ``transform=False`` (default) returns a Rect; pyright's
+            # stub picks the (Rect, Matrix) overload and mis-narrows.
+            bbox: pymupdf.Rect = page.get_image_bbox(img)  # pyright: ignore[reportAssignmentType]
+        except Exception as exc:
+            LOG.debug(f"pdffile choose_pixmap_dpi get_image_bbox failed: {exc}")
+            continue
+        if bbox.is_empty:
+            continue
+        if (bbox.width * bbox.height) / page_area < min_bbox_fraction:
+            continue
+        bbox_w_in = bbox.width / 72
+        bbox_h_in = bbox.height / 72
+        if bbox_w_in <= 0 or bbox_h_in <= 0:
+            continue
+        dpi = max(img_w / bbox_w_in, img_h / bbox_h_in)
+        best = max(best, round(dpi))
+    return min(best, cap)
+
+
 def extract_full_pixmap_jpeg(
-    doc: pymupdf.Document, index: int
+    doc: pymupdf.Document, index: int, *, dpi: int | None = None
 ) -> tuple[bytes, str] | None:
     """
     Render a whole page to RGB JPEG via Pixmap.
@@ -232,10 +298,18 @@ def extract_full_pixmap_jpeg(
     Used when the caller forces image rendering on a page that isn't
     image-dominant — composites text, vector ink, and multiple images
     correctly. Slower than the per-image extraction paths.
+
+    ``dpi=None`` (default) picks a render DPI from the page's
+    embedded-image resolution (see :func:`choose_pixmap_dpi`); pages
+    with no images render at :data:`DEFAULT_PIXMAP_DPI`. Pass an
+    integer to override.
     """
     try:
         page = doc.load_page(index)
-        pix = page.get_pixmap()
+        chosen_dpi = dpi if dpi is not None else choose_pixmap_dpi(page)
+        zoom = chosen_dpi / 72.0
+        matrix = pymupdf.Matrix(zoom, zoom)
+        pix = page.get_pixmap(matrix=matrix)
         if pix.colorspace and pix.colorspace.n not in BROWSER_NATIVE_COLORSPACES:
             pix = pymupdf.Pixmap(pymupdf.csRGB, pix)
         blob = pix.tobytes("jpeg")

@@ -15,9 +15,12 @@ from pymupdf import Document, mupdf
 from typing_extensions import Self
 
 from pdffile._image_serve import (
+    DEFAULT_PIXMAP_DPI,
+    MAX_PIXMAP_DPI,
     PDF_FALLBACK_VERDICT,
     PageMode,
     PageVerdict,
+    choose_pixmap_dpi,
     classify_page,
     extract_full_pixmap_jpeg,
     extract_image,
@@ -29,12 +32,15 @@ if TYPE_CHECKING:
     from datetime import datetime
 
 __all__ = (
+    "DEFAULT_PIXMAP_DPI",
     "FALSY",
+    "MAX_PIXMAP_DPI",
     "PDF_FALLBACK_VERDICT",
     "PDFFile",
     "PageFormat",
     "PageMode",
     "PageVerdict",
+    "choose_pixmap_dpi",
 )
 
 FALSY: set[None | bool | str] = {None, "", "false", "0", False}
@@ -233,7 +239,9 @@ class PDFFile:
             return None
         return extract_image(self._doc, verdict)
 
-    def read_full_pixmap_jpeg(self, index: int) -> tuple[bytes, str]:
+    def read_full_pixmap_jpeg(
+        self, index: int, *, dpi: int | None = None
+    ) -> tuple[bytes, str]:
         """
         Render the whole page to RGB JPEG.
 
@@ -242,13 +250,20 @@ class PDFFile:
         transcode). Tries the cheap embedded-image path first when
         the page happens to be image-dominant.
 
+        ``dpi=None`` (default) auto-picks a render DPI from the page's
+        embedded-image resolution via :func:`choose_pixmap_dpi`; pages
+        with no images render at :data:`DEFAULT_PIXMAP_DPI`. Pass an
+        integer to override. The auto path doesn't apply when the
+        cheap embedded-image branch fires — those return the embedded
+        image at its native resolution regardless.
+
         Always succeeds for valid pages — raises if PyMuPDF can't
         render the page at all.
         """
         cheap = self.read_image_if_dominant(index)
         if cheap is not None:
             return cheap
-        result = extract_full_pixmap_jpeg(self._doc, index)
+        result = extract_full_pixmap_jpeg(self._doc, index, dpi=dpi)
         if result is None:
             reason = f"pdffile full pixmap render failed for page {index}"
             raise RuntimeError(reason)
