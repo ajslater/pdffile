@@ -178,8 +178,23 @@ class PDFFile:
         return pix.tobytes(output=output), output
 
     def read_pdf(self, index: int) -> tuple[bytes, str]:
-        """Read a pdf page as complete one page pdf."""
-        return self._doc.convert_to_pdf(index, index), "pdf"
+        """
+        Read a pdf page as a complete one-page pdf.
+
+        Uses ``insert_pdf`` rather than ``Document.convert_to_pdf``:
+        the latter rebuilds the page's content stream and during that
+        rebuild it drops text rendering mode operators (notably ``3 Tr``,
+        invisible text) and renames specialised OCR fonts like
+        ``HiddenHorzOCR`` to ordinary text fonts. The net effect on
+        Acrobat-OCR'd PDFs is that the invisible OCR overlay turns
+        visible — text "doubles up" against the page's raster under any
+        renderer that follows the spec (PDF.js, MuPDF itself).
+        ``insert_pdf`` copies the page faithfully — same operators,
+        same fonts, no warnings, pixel-identical render to the source.
+        """
+        out = Document()
+        out.insert_pdf(self._doc, from_page=index, to_page=index)
+        return out.tobytes(), "pdf"
 
     def read_embedded_file(self, filename: str) -> tuple[bytes, str]:
         """Read embedded file."""

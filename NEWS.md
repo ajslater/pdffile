@@ -1,5 +1,10 @@
 # 📰 PDFFile News
 
+## v0.5.1
+
+- Extract PDF pages as originals rather than recomposing them. Fixes a bug where
+  OCR text became visible.
+
 ## v0.5.0
 
 - Refactor all datetime processing and move to a utility file.
