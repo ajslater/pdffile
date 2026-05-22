@@ -28,7 +28,7 @@ and back.
 The helper functions to_datetime, to_pdf_date, to_bool, and to_xml_bool are
 available on the PDFFile class.
 
-#### Installing on Linux on ARM (AARCH64) with Python 3.13
+### Installing on Linux on ARM (AARCH64) with Python 3.13
 
 Pymupdf has no pre-built wheels for AARCH64 so pip must build it and the build
 fails on Python 3.13 without this environment variable set:
