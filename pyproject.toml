@@ -17,7 +17,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "GPL-3.0-only"
 name = "comicbox-pdffile"
-version = "0.6.1"
+version = "0.6.2"
 [[project.authors]]
 name = "AJ Slater"
 email = "aj@slater.net"
@@ -55,12 +55,7 @@ lint = [
   "ty~=0.0.17",
   "vulture~=2.3",
 ]
-test = [
-  "coverage[toml]~=7.0",
-  "pytest-asyncio~=1.0",
-  "pytest-cov~=7.0",
-  "pytest-gitignore~=1.3",
-]
+test = ["coverage[toml]~=7.0", "pytest-asyncio~=1.0", "pytest-cov~=7.0"]
 docs = ["mkapi~=4.4", "mkdocs-minify-plugin~=0.8", "mkdocs~=1.6"]
 ci = ["requests~=2.32"]
 
@@ -98,6 +93,7 @@ source-include = [
   "frontend/**",
   "img/**",
   "mkdocks.yml",
+  "mkdocs.yml",
   "mock_comics/**",
   "package-lock.json",
   "package.json",
@@ -116,7 +112,6 @@ exclude = [
   "**/node_modules",
   "dist",
   "frontend",
-  "site",
   "site",
   "test-results",
   "typings",
@@ -144,14 +139,19 @@ reportUnusedParameter = false
 [tool.codespell]
 builtin = "clear,code,rare"
 check-hidden = true
-ignore-words-list = "coverd,falsy,jupyter,ro,searchd,searched,thead,versio,ws"
-skip = "*~,.*,./bun.lock,./dist,./node_modules,./package-lock.json,./package.json,./test-results,./uv.lock,/uv.lock"
+ignore-words-list = "coverd,crate,falsy,iff,jupyter,ro,searchd,searched,thead,versio,wan,warmup,ws"
+skip = "*.svg,*~,.*,.*/*,./bun.lock,./dist,./node_modules,./package-lock.json,./package.json,./test-results,./uv.lock,/uv.lock,__pycache__,bun.lock,dist,htmlcov,node_modules,package.json,test-results,typings,uv.lock"
 
 [tool.complexipy]
 failed = true
 paths = ["pdffile", "tests"]
 exclude = [
+  "**/__pycache__",
   "*/.*",
+  ".cache",
+  ".git",
+  ".github",
+  ".venv",
   "frontend",
   "node_modules",
   "site",
@@ -198,7 +198,7 @@ pythonpath = ["."]
 asyncio_mode = "strict"
 
 [tool.radon]
-exclude = "*~,.*,.*/*,__pycache__/*,config/*,dist/*,frontend/*,node_modules/*,site/*,test-results/*,typings/*"
+exclude = "*~,.*,.*/*,__pycache__/*,config/*,dist/*,frontend/*,node_modules/*,site/*,test-results/*,typings/*,vulture_ignorelist.py"
 
 [tool.ruff]
 builtins = ["ic"]
@@ -321,13 +321,11 @@ exclude = [
   "vulture_ignorelist.py",
 ]
 
-[tool.typos.default.extend-words]
-bookmarkd = "bookmarkd"
-coverd = "coverd"
-versio = "versio"
-
 [tool.vulture]
 exclude = [
+  "**/.*",
+  "**/__pycache__",
+  "**/node_modules",
   "*/.*",
   "*/__pycache__*",
   "*/node_modules*",
@@ -340,3 +338,8 @@ exclude = [
 ]
 min_confidence = 61
 sort_by_size = true
+
+[tool.typos.default.extend-words]
+bookmarkd = "bookmarkd"
+coverd = "coverd"
+versio = "versio"
