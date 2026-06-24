@@ -1,5 +1,9 @@
 # 📰 PDFFile News
 
+## v0.6.2
+
+- Security release for dependencies.
+
 ## v0.6.1 - Auto-DPI for full-page rasterization
 
 - New `choose_pixmap_dpi(page)` picks a render DPI matching the page's
