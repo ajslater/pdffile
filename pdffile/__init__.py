@@ -264,15 +264,16 @@ class PDFFile:
 
         ``dpi=None`` (default) auto-picks a render DPI from the page's
         embedded-image resolution via :func:`choose_pixmap_dpi`; pages
-        with no images render at :data:`DEFAULT_PIXMAP_DPI`. Pass an
-        integer to override. The auto path doesn't apply when the
-        cheap embedded-image branch fires — those return the embedded
-        image at its native resolution regardless.
+        with no images render at :data:`DEFAULT_PIXMAP_DPI`. An
+        explicit ``dpi`` skips the cheap embedded-image branch and
+        always renders — the branch returns the embedded image (or a
+        rotated page render) at its own resolution and would silently
+        ignore the override.
 
         Always succeeds for valid pages — raises if PyMuPDF can't
         render the page at all.
         """
-        cheap = self.read_image_if_dominant(index)
+        cheap = self.read_image_if_dominant(index) if dpi is None else None
         if cheap is not None:
             return cheap
         result = extract_full_pixmap_jpeg(self._doc, index, dpi=dpi)

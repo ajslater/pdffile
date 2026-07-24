@@ -13,6 +13,18 @@
   operations (`get_text` / `get_drawings`, both used by `classify_page`), so a
   read-only page serve could silently rewrite the file on disk. `close()` now
   saves only after explicit writes (`writestr` / `remove` / `write_metadata`).
+- Fix: image-dominant pages rotated by the content-stream matrix (CTM) instead
+  of `/Rotate` were still served as stored — sideways or upside down.
+  Classification now derives the display rotation from `/Rotate` plus the
+  placement transform, page-renders any rotated placement, and conservatively
+  falls back to the PDF path for mirrored/skewed placements or rotations that
+  cancel.
+- Fix: `choose_pixmap_dpi` paired image pixel dimensions with the wrong axes
+  for CTM-rotated placements, inflating the render DPI by the page aspect
+  ratio. It now measures each image axis's placed span from the transform.
+- `read_full_pixmap_jpeg(index, dpi=N)` with an explicit `dpi` now always
+  renders at that DPI instead of short-circuiting to the embedded image and
+  silently ignoring the override.
 
 ## v0.6.2
 

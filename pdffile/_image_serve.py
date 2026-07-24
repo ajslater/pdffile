@@ -20,12 +20,17 @@ costs single-digit milliseconds per page.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from enum import Enum
 from logging import getLogger
-from typing import Final
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Final
 
 import pymupdf
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 LOG = getLogger(__name__)
 
@@ -97,7 +102,10 @@ class PageVerdict:
     image_xref: int | None
     ext: str | None  # original encoding when known
     page_index: int | None = None
-    rotation: int = 0  # page /Rotate degrees; nonzero forces a page render
+    #: Display rotation in degrees — the page's /Rotate combined with
+    #: the content-stream placement rotation. Nonzero forces a whole-
+    #: page render at extraction time (as-stored bytes can't carry it).
+    rotation: int = 0
 
 
 PDF_FALLBACK_VERDICT: Final[PageVerdict] = PageVerdict(
@@ -125,6 +133,51 @@ def _coverage_for(page: pymupdf.Page, image: tuple) -> float | None:
     return min((bbox.width * bbox.height) / page_area, 1.0)
 
 
+#: Placement rotation by the sign pattern of the transform matrix's
+#: ``(a, b, c, d)``. The 90/270 patterns are pymupdf-empirical (see
+#: tests); they only need to be stable, not "right" — callers
+#: page-render for any nonzero rotation, so a swapped label still
+#: displays correctly. Patterns absent here (mirrored, skewed) map to
+#: ``None`` via ``.get``.
+_ROTATION_BY_SIGNS: Final[Mapping[tuple[int, int, int, int], int]] = MappingProxyType(
+    {
+        (1, 0, 0, 1): 0,
+        (-1, 0, 0, -1): 180,
+        (0, -1, 1, 0): 90,
+        (0, 1, -1, 0): 270,
+    }
+)
+
+
+def _sign(value: float, tol: float) -> int:
+    """Ternary sign of ``value``, treating ``[-tol, tol]`` as zero."""
+    return (value > tol) - (value < -tol)
+
+
+def _placement_rotation(page: pymupdf.Page, image: tuple) -> int | None:
+    """
+    Degrees the content stream rotates the image's placement.
+
+    Returns 0/90/180/270 for axis-aligned placements, or ``None`` for
+    mirrored, skewed, or degenerate matrices — those can only be
+    reproduced by the PDF path. Excludes the page's /Rotate, which
+    pymupdf reports separately via ``page.rotation`` (the transform
+    from ``get_image_bbox`` is in unrotated page space).
+    """
+    try:
+        _, matrix = page.get_image_bbox(image, transform=True)
+    except Exception as exc:
+        LOG.warning(f"pdffile classify placement transform failed: {exc}")
+        return None
+    a, b, c, d = matrix.a, matrix.b, matrix.c, matrix.d
+    scale = max(abs(a), abs(b), abs(c), abs(d))
+    if not scale:
+        return None
+    tol = scale * 1e-4
+    signs = (_sign(a, tol), _sign(b, tol), _sign(c, tol), _sign(d, tol))
+    return _ROTATION_BY_SIGNS.get(signs)
+
+
 def _passes_image_gates(page: pymupdf.Page, images: list) -> bool:
     """Run the image-dominant gates on a page; True iff they all pass."""
     if len(images) != EXACT_IMAGE_COUNT:
@@ -146,11 +199,13 @@ def _verdict_for_image(
     """
     Decide IMAGE_DIRECT vs IMAGE_TRANSCODE for an image-dominant page.
 
-    Rotated pages always need transcoding: extracted bytes don't carry
-    the page's /Rotate, so ``extract_image`` re-renders the whole page
-    (which applies it) instead of decoding the bare xref. Non-browser-
-    native formats (JBIG2, JPEG 2000, CCITT) and CMYK colorspace also
-    need transcode, via the cheaper xref decode.
+    ``rotation`` is the page's *display* rotation (/Rotate combined
+    with the content-stream placement). Rotated pages always need
+    transcoding: extracted bytes don't carry rotation, so
+    ``extract_image`` re-renders the whole page (which applies it)
+    instead of decoding the bare xref. Non-browser-native formats
+    (JBIG2, JPEG 2000, CCITT) and CMYK colorspace also need transcode,
+    via the cheaper xref decode.
     """
     if rotation:
         return PageVerdict(
@@ -192,7 +247,17 @@ def classify_page(doc: pymupdf.Document, index: int) -> PageVerdict:
     images = page.get_images(full=True)
     if not _passes_image_gates(page, images):
         return PDF_FALLBACK_VERDICT
-    return _verdict_for_image(doc, index, images[0][0], rotation=page.rotation)
+    placement = _placement_rotation(page, images[0])
+    if placement is None:
+        # Mirrored / skewed placement — only the PDF path renders it.
+        return PDF_FALLBACK_VERDICT
+    display_rotation = (page.rotation + placement) % 360
+    if placement and not display_rotation:
+        # /Rotate and the placement nominally cancel; serving as-stored
+        # would bet on the two sign conventions matching exactly, so
+        # take the always-correct PDF path instead.
+        return PDF_FALLBACK_VERDICT
+    return _verdict_for_image(doc, index, images[0][0], rotation=display_rotation)
 
 
 # ── Extraction (public) ───────────────────────────────────────────
@@ -282,9 +347,7 @@ def choose_pixmap_dpi(
         if not img_w or not img_h:
             continue
         try:
-            # ``transform=False`` (default) returns a Rect; pyright's
-            # stub picks the (Rect, Matrix) overload and mis-narrows.
-            bbox: pymupdf.Rect = page.get_image_bbox(img)  # pyright: ignore[reportAssignmentType]
+            bbox, matrix = page.get_image_bbox(img, transform=True)
         except Exception as exc:
             LOG.debug(f"pdffile choose_pixmap_dpi get_image_bbox failed: {exc}")
             continue
@@ -292,11 +355,16 @@ def choose_pixmap_dpi(
             continue
         if (bbox.width * bbox.height) / page_area < min_bbox_fraction:
             continue
-        bbox_w_in = bbox.width / 72
-        bbox_h_in = bbox.height / 72
-        if bbox_w_in <= 0 or bbox_h_in <= 0:
+        # The transform's columns are the placed spans of the image's
+        # own x and y axes, so each pixel dimension pairs with the
+        # right physical extent even for CTM-rotated placements (a
+        # naive bbox-width / image-width pairing mixes the axes for
+        # 90/270 placements and inflates the DPI by the aspect ratio).
+        span_x_in = math.hypot(matrix.a, matrix.b) / 72
+        span_y_in = math.hypot(matrix.c, matrix.d) / 72
+        if span_x_in <= 0 or span_y_in <= 0:
             continue
-        dpi = max(img_w / bbox_w_in, img_h / bbox_h_in)
+        dpi = max(img_w / span_x_in, img_h / span_y_in)
         best = max(best, round(dpi))
     return min(best, cap)
 
