@@ -96,6 +96,8 @@ class PageVerdict:
     mode: PageMode
     image_xref: int | None
     ext: str | None  # original encoding when known
+    page_index: int | None = None
+    rotation: int = 0  # page /Rotate degrees; nonzero forces a page render
 
 
 PDF_FALLBACK_VERDICT: Final[PageVerdict] = PageVerdict(
@@ -139,17 +141,21 @@ def _passes_image_gates(page: pymupdf.Page, images: list) -> bool:
 
 
 def _verdict_for_image(
-    doc: pymupdf.Document, xref: int, *, rotated: bool
+    doc: pymupdf.Document, index: int, xref: int, *, rotation: int
 ) -> PageVerdict:
     """
     Decide IMAGE_DIRECT vs IMAGE_TRANSCODE for an image-dominant page.
 
-    Rotated pages always need transcoding (extracted bytes don't carry
-    rotation; the Pixmap path applies it). Non-browser-native formats
-    (JBIG2, JPEG 2000, CCITT) and CMYK colorspace also need transcode.
+    Rotated pages always need transcoding: extracted bytes don't carry
+    the page's /Rotate, so ``extract_image`` re-renders the whole page
+    (which applies it) instead of decoding the bare xref. Non-browser-
+    native formats (JBIG2, JPEG 2000, CCITT) and CMYK colorspace also
+    need transcode, via the cheaper xref decode.
     """
-    if rotated:
-        return PageVerdict(PageMode.IMAGE_TRANSCODE, xref, None)
+    if rotation:
+        return PageVerdict(
+            PageMode.IMAGE_TRANSCODE, xref, None, page_index=index, rotation=rotation
+        )
     try:
         info = doc.extract_image(xref)
     except Exception as exc:
@@ -158,8 +164,8 @@ def _verdict_for_image(
     ext = (info.get("ext") or "").lower()
     cs = info.get("colorspace", 0)
     if ext in BROWSER_NATIVE_EXTS and cs in BROWSER_NATIVE_COLORSPACES:
-        return PageVerdict(PageMode.IMAGE_DIRECT, xref, ext)
-    return PageVerdict(PageMode.IMAGE_TRANSCODE, xref, ext)
+        return PageVerdict(PageMode.IMAGE_DIRECT, xref, ext, page_index=index)
+    return PageVerdict(PageMode.IMAGE_TRANSCODE, xref, ext, page_index=index)
 
 
 # ── Detection (public) ────────────────────────────────────────────
@@ -186,7 +192,7 @@ def classify_page(doc: pymupdf.Document, index: int) -> PageVerdict:
     images = page.get_images(full=True)
     if not _passes_image_gates(page, images):
         return PDF_FALLBACK_VERDICT
-    return _verdict_for_image(doc, images[0][0], rotated=bool(page.rotation))
+    return _verdict_for_image(doc, index, images[0][0], rotation=page.rotation)
 
 
 # ── Extraction (public) ───────────────────────────────────────────
@@ -212,10 +218,12 @@ def _extract_direct(
 
 def _extract_transcode(doc: pymupdf.Document, xref: int) -> tuple[bytes, str] | None:
     """
-    Re-encode an embedded image to RGB JPEG.
+    Re-encode an embedded image to RGB JPEG, as-stored.
 
-    Used for CMYK colorspaces, JBIG2 / JPEG 2000 / CCITT formats, and
-    rotated pages — anything browsers don't render natively.
+    Used for CMYK colorspaces and JBIG2 / JPEG 2000 / CCITT formats —
+    encodings browsers don't render natively. Decodes the bare xref,
+    so page geometry (/Rotate, CTM) is NOT applied — rotated pages
+    must go through :func:`extract_full_pixmap_jpeg` instead.
     """
     try:
         pix = pymupdf.Pixmap(doc, xref)
@@ -237,6 +245,10 @@ def extract_image(
     if verdict.mode is PageMode.IMAGE_DIRECT and verdict.image_xref is not None:
         return _extract_direct(doc, verdict.image_xref, verdict.ext)
     if verdict.mode is PageMode.IMAGE_TRANSCODE and verdict.image_xref is not None:
+        if verdict.rotation and verdict.page_index is not None:
+            # A bare xref decode can't carry the page's /Rotate —
+            # render the whole page, which applies it.
+            return extract_full_pixmap_jpeg(doc, verdict.page_index)
         return _extract_transcode(doc, verdict.image_xref)
     return None
 

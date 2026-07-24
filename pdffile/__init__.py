@@ -227,8 +227,9 @@ class PDFFile:
 
         ``ext`` is the embedded image's encoding ('jpeg', 'png',
         'webp') for ``IMAGE_DIRECT`` verdicts, or 'jpeg' for
-        ``IMAGE_TRANSCODE`` verdicts (CMYK / JBIG2 / rotated pages
-        re-encoded via Pixmap).
+        ``IMAGE_TRANSCODE`` verdicts (CMYK / JBIG2 images re-encoded
+        via Pixmap; rotated pages re-rendered via the page pixmap,
+        which applies /Rotate).
 
         ``None`` means the caller should use :meth:`read_pdf` (or
         another fallback path) — the page has vector content that

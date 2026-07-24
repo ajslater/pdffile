@@ -11,7 +11,8 @@ classify correctly:
 * image plus significant vector text (PDF_FALLBACK — text gate)
 * two images on one page (PDF_FALLBACK — multi-image gate)
 * image plus drawing (PDF_FALLBACK — drawings gate)
-* rotated full-bleed JPEG (IMAGE_TRANSCODE)
+* rotated full-bleed JPEG (IMAGE_TRANSCODE — extraction must apply
+  /Rotate, i.e. match the page's displayed orientation)
 """
 
 from __future__ import annotations
@@ -53,6 +54,44 @@ def _solid_cmyk_jpeg(size: tuple[int, int] = (300, 400)) -> bytes:
     buf = io.BytesIO()
     img.save(buf, "JPEG")
     return buf.getvalue()
+
+
+def _two_tone_jpeg(size: tuple[int, int] = (300, 400)) -> bytes:
+    """Red top half, blue bottom half — makes orientation detectable."""
+    img = Image.new("RGB", size, (200, 50, 50))
+    img.paste((50, 50, 200), (0, size[1] // 2, size[0], size[1]))
+    buf = io.BytesIO()
+    img.save(buf, "JPEG")
+    return buf.getvalue()
+
+
+def _top_bottom_colors(blob: bytes) -> tuple[tuple, tuple]:
+    """Sample pixels near the top and bottom edges of a JPEG."""
+    img = Image.open(io.BytesIO(blob)).convert("RGB")
+    w, h = img.size
+    top = img.getpixel((w // 2, h // 20))
+    bottom = img.getpixel((w // 2, h - 1 - h // 20))
+    # ``getpixel`` on an RGB image always yields a tuple; narrow the
+    # stub's ``float | tuple | None`` union for the type checker.
+    assert isinstance(top, tuple)
+    assert isinstance(bottom, tuple)
+    return top, bottom
+
+
+#: Channel threshold separating the red half from the blue half after
+#: JPEG compression (nominal values are 200 vs 50).
+_CHANNEL_THRESHOLD = 120
+
+#: /Rotate value used by the ``rotated`` fixture.
+_ROTATED_FIXTURE_DEGREES = 90
+
+
+def _is_reddish(px: tuple) -> bool:
+    return px[0] > _CHANNEL_THRESHOLD and px[2] < _CHANNEL_THRESHOLD
+
+
+def _is_bluish(px: tuple) -> bool:
+    return px[2] > _CHANNEL_THRESHOLD and px[0] < _CHANNEL_THRESHOLD
 
 
 def _new_pdf(tmp_path: Path, name: str) -> tuple[pymupdf.Document, Path]:
@@ -166,6 +205,22 @@ def rotated(tmp_path: Path) -> Path:
     return _save(doc, path)
 
 
+@pytest.fixture
+def rotated_180(tmp_path: Path) -> Path:
+    """
+    Image-dominant page stored upside down, righted by /Rotate 180.
+
+    Mirrors scanner output that stores each scan inverted and relies
+    on the page rotation attribute for display. The stored image has
+    a red top; the *displayed* page has a blue top.
+    """
+    doc, path = _new_pdf(tmp_path, "rotated_180.pdf")
+    page = doc.new_page(width=300, height=400)  # type: ignore[attr-defined]
+    page.insert_image(page.rect, stream=_two_tone_jpeg())
+    page.set_rotation(180)
+    return _save(doc, path)
+
+
 # ── classify_page ─────────────────────────────────────────────────
 
 
@@ -260,6 +315,8 @@ def test_classify_rotated_needs_transcode(rotated: Path) -> None:
     finally:
         pdf.close()
     assert v.mode is PageMode.IMAGE_TRANSCODE
+    assert v.rotation == _ROTATED_FIXTURE_DEGREES
+    assert v.page_index == 0
 
 
 # ── read_image_if_dominant ────────────────────────────────────────
@@ -320,6 +377,37 @@ def test_read_image_if_dominant_returns_none_on_fallback(vector_only: Path) -> N
     assert result is None
 
 
+def test_read_image_if_dominant_applies_180_rotation(rotated_180: Path) -> None:
+    """/Rotate 180 page → extraction matches the displayed orientation."""
+    pdf = PDFFile(rotated_180)
+    try:
+        result = pdf.read_image_if_dominant(0)
+    finally:
+        pdf.close()
+    assert result is not None
+    blob, ext = result
+    assert ext == "jpeg"
+    top, bottom = _top_bottom_colors(blob)
+    assert _is_bluish(top), f"top should be blue after /Rotate 180, got {top}"
+    assert _is_reddish(bottom), f"bottom should be red after /Rotate 180, got {bottom}"
+
+
+def test_read_image_if_dominant_applies_90_rotation(rotated: Path) -> None:
+    """/Rotate 90 page → extraction is landscape like the displayed page."""
+    pdf = PDFFile(rotated)
+    try:
+        result = pdf.read_image_if_dominant(0)
+    finally:
+        pdf.close()
+    assert result is not None
+    blob, ext = result
+    assert ext == "jpeg"
+    img = Image.open(io.BytesIO(blob))
+    assert img.width > img.height, (
+        f"expected landscape after /Rotate 90, got {img.size}"
+    )
+
+
 # ── read_full_pixmap_jpeg ─────────────────────────────────────────
 
 
@@ -348,6 +436,19 @@ def test_read_full_pixmap_jpeg_short_circuits_for_image_dominant(
     # Should be the embedded JPEG (same first bytes), not a re-render.
     assert ext == "jpeg"
     assert blob[:3] == b"\xff\xd8\xff"
+
+
+def test_read_full_pixmap_jpeg_applies_180_rotation(rotated_180: Path) -> None:
+    """Forced-image serve of a /Rotate 180 page matches the display."""
+    pdf = PDFFile(rotated_180)
+    try:
+        blob, ext = pdf.read_full_pixmap_jpeg(0)
+    finally:
+        pdf.close()
+    assert ext == "jpeg"
+    top, bottom = _top_bottom_colors(blob)
+    assert _is_bluish(top), f"top should be blue after /Rotate 180, got {top}"
+    assert _is_reddish(bottom), f"bottom should be red after /Rotate 180, got {bottom}"
 
 
 # ── read() integration via PageFormat.IMAGE_IF_DOMINANT ──────────
