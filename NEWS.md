@@ -2,12 +2,11 @@
 
 ## v0.6.3 - Apply page rotation when serving rotated image-dominant pages
 
-- Fix: `read_image_if_dominant` / `read_full_pixmap_jpeg` returned the
-  embedded image *as stored* for pages with a `/Rotate` attribute, so scans
-  stored inverted (common scanner output relying on `/Rotate 180` for display)
-  were served upside down. Rotated `IMAGE_TRANSCODE` verdicts now re-render
-  the whole page — which applies `/Rotate` — instead of decoding the bare
-  image xref.
+- Fix: `read_image_if_dominant` / `read_full_pixmap_jpeg` returned the embedded
+  image _as stored_ for pages with a `/Rotate` attribute, so scans stored
+  inverted (common scanner output relying on `/Rotate 180` for display) were
+  served upside down. Rotated `IMAGE_TRANSCODE` verdicts now re-render the whole
+  page — which applies `/Rotate` — instead of decoding the bare image xref.
 - `PageVerdict` gains `page_index` and `rotation` fields.
 
 ## v0.6.2

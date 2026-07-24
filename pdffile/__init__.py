@@ -43,7 +43,7 @@ __all__ = (
     "choose_pixmap_dpi",
 )
 
-FALSY: set[None | bool | str] = {None, "", "false", "0", False}
+FALSY: set[bool | str | None] = {None, "", "false", "0", False}
 LOG: Logger = getLogger(__name__)
 
 
