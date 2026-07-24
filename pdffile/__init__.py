@@ -282,9 +282,12 @@ class PDFFile:
             raise RuntimeError(reason)
         return result
 
-    def read_pdf(self, index: int) -> tuple[bytes, str]:
+    def read_pdf(self, index: int, index_to: int | None = None) -> tuple[bytes, str]:
         """
-        Read a pdf page as a complete one-page pdf.
+        Read a page or an inclusive page range as a complete pdf.
+
+        ``index_to`` extends the output to a multi-page pdf ending at
+        that page. Omitted reads the single page ``index``.
 
         Uses ``insert_pdf`` rather than ``Document.convert_to_pdf``:
         the latter rebuilds the page's content stream and during that
@@ -297,8 +300,14 @@ class PDFFile:
         ``insert_pdf`` copies the page faithfully — same operators,
         same fonts, no warnings, pixel-identical render to the source.
         """
+        if index_to is None:
+            index_to = index
+        elif index_to < index:
+            # insert_pdf silently reverses page order for an inverted range.
+            reason = f"End page {index_to} before start page {index}."
+            raise ValueError(reason)
         out = Document()
-        out.insert_pdf(self._doc, from_page=index, to_page=index)
+        out.insert_pdf(self._doc, from_page=index, to_page=index_to)
         # ``no_new_id=True`` keeps output deterministic across calls; without
         # it pymupdf stamps a fresh random ``/ID`` array on every save and
         # downstream byte-equality fixtures churn on every test run.

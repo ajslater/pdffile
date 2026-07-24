@@ -2,6 +2,10 @@
 
 ## v0.6.3 - Apply page rotation when serving rotated image-dominant pages
 
+- `PDFFile.read_pdf(index, index_to=None)` accepts an optional inclusive end
+  page and returns one multi-page pdf spanning the range. Single argument calls
+  are byte identical to before. An `index_to` before `index` raises `ValueError`
+  rather than silently reversing the page order.
 - Fix: `read_image_if_dominant` / `read_full_pixmap_jpeg` returned the embedded
   image _as stored_ for pages with a `/Rotate` attribute, so scans stored
   inverted (common scanner output relying on `/Rotate 180` for display) were
