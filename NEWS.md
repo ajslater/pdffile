@@ -23,9 +23,9 @@
   placement transform, page-renders any rotated placement, and conservatively
   falls back to the PDF path for mirrored/skewed placements or rotations that
   cancel.
-- Fix: `choose_pixmap_dpi` paired image pixel dimensions with the wrong axes
-  for CTM-rotated placements, inflating the render DPI by the page aspect
-  ratio. It now measures each image axis's placed span from the transform.
+- Fix: `choose_pixmap_dpi` paired image pixel dimensions with the wrong axes for
+  CTM-rotated placements, inflating the render DPI by the page aspect ratio. It
+  now measures each image axis's placed span from the transform.
 - `read_full_pixmap_jpeg(index, dpi=N)` with an explicit `dpi` now always
   renders at that DPI instead of short-circuiting to the embedded image and
   silently ignoring the override.
