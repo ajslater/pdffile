@@ -130,6 +130,7 @@ class PDFFile:
         """Initialize document."""
         self._path: Path = path
         self._doc: Document = Document(self._path)
+        self._modified: bool = False
 
     def __enter__(self) -> Self:
         """Context enter."""
@@ -154,11 +155,21 @@ class PDFFile:
             no_new_id=True,
         )
         tmp_path.replace(self._path)
+        self._modified = False
 
     def close(self) -> None:
-        """Close the fitz doc."""
+        """
+        Close the fitz doc, saving only if the caller wrote to it.
+
+        Deliberately keyed on the explicit ``_modified`` flag rather
+        than ``Document.is_dirty``: MuPDF marks a doc dirty when it
+        repairs malformed content streams in memory during *read*
+        operations (``get_text``, ``get_drawings`` — both used by
+        ``classify_page``), and saving on that signal would rewrite
+        the user's file on disk from a read-only workflow.
+        """
         if self._doc:
-            if self._doc.is_dirty:
+            if self._modified:
                 self.save()
             self._doc.close()
 
@@ -380,6 +391,7 @@ class PDFFile:
         new_metadata = {**preserved_metadata, **metadata}
         converted_metadata = self._convert_metadata(new_metadata, to=False)
         self._doc.set_metadata(converted_metadata)
+        self._modified = True
 
     def remove(self, name: str) -> None:
         """Remove files or pages from the pdf."""
@@ -388,6 +400,7 @@ class PDFFile:
             self._doc.delete_page(page)
         except ValueError:
             self._doc.embfile_del(name)
+        self._modified = True
 
     def writestr(
         self, name: str, buffer: str | bytes | bytearray | memoryview[int], **_kwargs
@@ -405,6 +418,7 @@ class PDFFile:
             if isinstance(buffer, str):
                 buffer = buffer.encode(errors="replace")
             self._doc.embfile_add(name, buffer)
+            self._modified = True
 
     def repack(self) -> None:
         """Noop. For compatibility with zipfile-patch."""

@@ -8,6 +8,11 @@
   served upside down. Rotated `IMAGE_TRANSCODE` verdicts now re-render the whole
   page — which applies `/Rotate` — instead of decoding the bare image xref.
 - `PageVerdict` gains `page_index` and `rotation` fields.
+- Fix: `close()` saved the document whenever MuPDF marked it dirty — and MuPDF
+  does that when it repairs malformed content streams in memory during read
+  operations (`get_text` / `get_drawings`, both used by `classify_page`), so a
+  read-only page serve could silently rewrite the file on disk. `close()` now
+  saves only after explicit writes (`writestr` / `remove` / `write_metadata`).
 
 ## v0.6.2
 
