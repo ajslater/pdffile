@@ -1,5 +1,35 @@
 # 📰 PDFFile News
 
+## v0.6.3 - Apply page rotation when serving rotated image-dominant pages
+
+- `PDFFile.read_pdf(index, index_to=None)` accepts an optional inclusive end
+  page and returns one multi-page pdf spanning the range. Single argument calls
+  are byte identical to before. An `index_to` before `index` raises `ValueError`
+  rather than silently reversing the page order.
+- Fix: `read_image_if_dominant` / `read_full_pixmap_jpeg` returned the embedded
+  image _as stored_ for pages with a `/Rotate` attribute, so scans stored
+  inverted (common scanner output relying on `/Rotate 180` for display) were
+  served upside down. Rotated `IMAGE_TRANSCODE` verdicts now re-render the whole
+  page — which applies `/Rotate` — instead of decoding the bare image xref.
+- `PageVerdict` gains `page_index` and `rotation` fields.
+- Fix: `close()` saved the document whenever MuPDF marked it dirty — and MuPDF
+  does that when it repairs malformed content streams in memory during read
+  operations (`get_text` / `get_drawings`, both used by `classify_page`), so a
+  read-only page serve could silently rewrite the file on disk. `close()` now
+  saves only after explicit writes (`writestr` / `remove` / `write_metadata`).
+- Fix: image-dominant pages rotated by the content-stream matrix (CTM) instead
+  of `/Rotate` were still served as stored — sideways or upside down.
+  Classification now derives the display rotation from `/Rotate` plus the
+  placement transform, page-renders any rotated placement, and conservatively
+  falls back to the PDF path for mirrored/skewed placements or rotations that
+  cancel.
+- Fix: `choose_pixmap_dpi` paired image pixel dimensions with the wrong axes for
+  CTM-rotated placements, inflating the render DPI by the page aspect ratio. It
+  now measures each image axis's placed span from the transform.
+- `read_full_pixmap_jpeg(index, dpi=N)` with an explicit `dpi` now always
+  renders at that DPI instead of short-circuiting to the embedded image and
+  silently ignoring the override.
+
 ## v0.6.2
 
 - Security release for dependencies.

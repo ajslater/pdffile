@@ -43,7 +43,7 @@ __all__ = (
     "choose_pixmap_dpi",
 )
 
-FALSY: set[None | bool | str] = {None, "", "false", "0", False}
+FALSY: set[bool | str | None] = {None, "", "false", "0", False}
 LOG: Logger = getLogger(__name__)
 
 
@@ -130,6 +130,7 @@ class PDFFile:
         """Initialize document."""
         self._path: Path = path
         self._doc: Document = Document(self._path)
+        self._modified: bool = False
 
     def __enter__(self) -> Self:
         """Context enter."""
@@ -154,11 +155,21 @@ class PDFFile:
             no_new_id=True,
         )
         tmp_path.replace(self._path)
+        self._modified = False
 
     def close(self) -> None:
-        """Close the fitz doc."""
+        """
+        Close the fitz doc, saving only if the caller wrote to it.
+
+        Deliberately keyed on the explicit ``_modified`` flag rather
+        than ``Document.is_dirty``: MuPDF marks a doc dirty when it
+        repairs malformed content streams in memory during *read*
+        operations (``get_text``, ``get_drawings`` — both used by
+        ``classify_page``), and saving on that signal would rewrite
+        the user's file on disk from a read-only workflow.
+        """
         if self._doc:
-            if self._doc.is_dirty:
+            if self._modified:
                 self.save()
             self._doc.close()
 
@@ -227,8 +238,9 @@ class PDFFile:
 
         ``ext`` is the embedded image's encoding ('jpeg', 'png',
         'webp') for ``IMAGE_DIRECT`` verdicts, or 'jpeg' for
-        ``IMAGE_TRANSCODE`` verdicts (CMYK / JBIG2 / rotated pages
-        re-encoded via Pixmap).
+        ``IMAGE_TRANSCODE`` verdicts (CMYK / JBIG2 images re-encoded
+        via Pixmap; rotated pages re-rendered via the page pixmap,
+        which applies /Rotate).
 
         ``None`` means the caller should use :meth:`read_pdf` (or
         another fallback path) — the page has vector content that
@@ -252,15 +264,16 @@ class PDFFile:
 
         ``dpi=None`` (default) auto-picks a render DPI from the page's
         embedded-image resolution via :func:`choose_pixmap_dpi`; pages
-        with no images render at :data:`DEFAULT_PIXMAP_DPI`. Pass an
-        integer to override. The auto path doesn't apply when the
-        cheap embedded-image branch fires — those return the embedded
-        image at its native resolution regardless.
+        with no images render at :data:`DEFAULT_PIXMAP_DPI`. An
+        explicit ``dpi`` skips the cheap embedded-image branch and
+        always renders — the branch returns the embedded image (or a
+        rotated page render) at its own resolution and would silently
+        ignore the override.
 
         Always succeeds for valid pages — raises if PyMuPDF can't
         render the page at all.
         """
-        cheap = self.read_image_if_dominant(index)
+        cheap = self.read_image_if_dominant(index) if dpi is None else None
         if cheap is not None:
             return cheap
         result = extract_full_pixmap_jpeg(self._doc, index, dpi=dpi)
@@ -269,9 +282,12 @@ class PDFFile:
             raise RuntimeError(reason)
         return result
 
-    def read_pdf(self, index: int) -> tuple[bytes, str]:
+    def read_pdf(self, index: int, index_to: int | None = None) -> tuple[bytes, str]:
         """
-        Read a pdf page as a complete one-page pdf.
+        Read a page or an inclusive page range as a complete pdf.
+
+        ``index_to`` extends the output to a multi-page pdf ending at
+        that page. Omitted reads the single page ``index``.
 
         Uses ``insert_pdf`` rather than ``Document.convert_to_pdf``:
         the latter rebuilds the page's content stream and during that
@@ -284,8 +300,14 @@ class PDFFile:
         ``insert_pdf`` copies the page faithfully — same operators,
         same fonts, no warnings, pixel-identical render to the source.
         """
+        if index_to is None:
+            index_to = index
+        elif index_to < index:
+            # insert_pdf silently reverses page order for an inverted range.
+            reason = f"End page {index_to} before start page {index}."
+            raise ValueError(reason)
         out = Document()
-        out.insert_pdf(self._doc, from_page=index, to_page=index)
+        out.insert_pdf(self._doc, from_page=index, to_page=index_to)
         # ``no_new_id=True`` keeps output deterministic across calls; without
         # it pymupdf stamps a fresh random ``/ID`` array on every save and
         # downstream byte-equality fixtures churn on every test run.
@@ -379,6 +401,7 @@ class PDFFile:
         new_metadata = {**preserved_metadata, **metadata}
         converted_metadata = self._convert_metadata(new_metadata, to=False)
         self._doc.set_metadata(converted_metadata)
+        self._modified = True
 
     def remove(self, name: str) -> None:
         """Remove files or pages from the pdf."""
@@ -387,6 +410,7 @@ class PDFFile:
             self._doc.delete_page(page)
         except ValueError:
             self._doc.embfile_del(name)
+        self._modified = True
 
     def writestr(
         self, name: str, buffer: str | bytes | bytearray | memoryview[int], **_kwargs
@@ -404,6 +428,7 @@ class PDFFile:
             if isinstance(buffer, str):
                 buffer = buffer.encode(errors="replace")
             self._doc.embfile_add(name, buffer)
+            self._modified = True
 
     def repack(self) -> None:
         """Noop. For compatibility with zipfile-patch."""
