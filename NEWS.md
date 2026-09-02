@@ -1,6 +1,6 @@
 # 📰 PDFFile News
 
-## v0.6.3 - Apply page rotation when serving rotated image-dominant pages
+## v0.6.3 - Rotate pages when serving rotated image-dominant pages
 
 - `PDFFile.read_pdf(index, index_to=None)` accepts an optional inclusive end
   page and returns one multi-page pdf spanning the range. Single argument calls
@@ -94,10 +94,10 @@
 
 - read() also extract original image files. Format now specified with an string.
   File extension passed back in an optional props dict.
-- read_image() reads the first image on a page in the original format
-- read_pixmap() converts the page to a ppm.
-- read_pdf() converts the page into a one page pdf.
-- read_embedded_file() reads a named embedded file
+- read\_image() reads the first image on a page in the original format
+- read\_pixmap() converts the page to a ppm.
+- read\_pdf() converts the page into a one page pdf.
+- read\_embedded\_file() reads a named embedded file
 - PageFormat convenience enum to show options.
 
 ## v0.3.0 - Embedded File Support
@@ -121,8 +121,8 @@
 
 - Automatically converts pdf datestrings to python datetimes and back.
 - Automatically converts pdf/xml bool string to python bools and back
-- PDFFile static methods to_datetime, to_pdf_date, and to_bool and to_xml_bool
-  do this manually.
+- PDFFile static methods to\_datetime, to\_pdf\_date, and to\_bool and
+  to\_xml\_bool do this manually.
 - Deflate images on save.
 
 ## v0.2.0-0.2.2 - Yanked
@@ -153,7 +153,7 @@
 
 ## v0.1.2
 
-- Fix bad reference to new_fitz as it's the default now.
+- Fix bad reference to new\_fitz as it's the default now.
 
 ## v0.1.1
 
