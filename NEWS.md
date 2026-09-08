@@ -1,6 +1,6 @@
 # 📰 PDFFile News
 
-## v0.6.3 - Rotate pages when serving rotated image-dominant pages
+## v0.6.3 - Rotate image-dominant pages correctrly
 
 - `PDFFile.read_pdf(index, index_to=None)` accepts an optional inclusive end
   page and returns one multi-page pdf spanning the range. Single argument calls
