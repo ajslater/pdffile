@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from enum import Enum
+from enum import StrEnum
 from logging import Logger, getLogger
 from pathlib import Path
 from types import MappingProxyType
@@ -46,8 +46,8 @@ FALSY: set[bool | str | None] = {None, "", "false", "0", False}
 LOG: Logger = getLogger(__name__)
 
 
-class PageFormat(Enum):
-    """Read Format."""
+class PageFormat(StrEnum):
+    """Read Format. Members are strs, pass them or their values to ``read``."""
 
     PDF = "pdf"
     IMAGE = "image"
@@ -327,29 +327,25 @@ class PDFFile:
         (``pdf``).
         """
         try:
-            if not fmt:
-                fmt = PageFormat.PDF.value
             index = self.valid_pagenum(filename)
-            if fmt == PageFormat.IMAGE.value:
-                try:
-                    page_bytes, ext = self.read_image(index)
-                except Exception as exc:
-                    LOG.warning(
-                        f"Unable to extract first image from page, converting to pixmap: {exc}"
-                    )
+            match fmt:
+                case PageFormat.IMAGE:
+                    try:
+                        page_bytes, ext = self.read_image(index)
+                    except Exception as exc:
+                        LOG.warning(
+                            f"Unable to extract first image from page, converting to pixmap: {exc}"
+                        )
+                        page_bytes, ext = self.read_pixmap(index)
+                case PageFormat.PIXMAP:
                     page_bytes, ext = self.read_pixmap(index)
-            elif fmt == PageFormat.PIXMAP.value:
-                page_bytes, ext = self.read_pixmap(index)
-            elif fmt == PageFormat.IMAGE_IF_DOMINANT.value:
-                served = self.read_image_if_dominant(index)
-                if served is not None:
-                    page_bytes, ext = served
-                else:
+                case PageFormat.IMAGE_IF_DOMINANT:
+                    served = self.read_image_if_dominant(index)
+                    page_bytes, ext = served or self.read_pdf(index)
+                case PageFormat.PIXMAP_JPEG:
+                    page_bytes, ext = self.read_full_pixmap_jpeg(index)
+                case _:  # PageFormat.PDF, empty, or unknown
                     page_bytes, ext = self.read_pdf(index)
-            elif fmt == PageFormat.PIXMAP_JPEG.value:
-                page_bytes, ext = self.read_full_pixmap_jpeg(index)
-            else:
-                page_bytes, ext = self.read_pdf(index)
         except ValueError:
             page_bytes, ext = self.read_embedded_file(filename)
         if props is not None:

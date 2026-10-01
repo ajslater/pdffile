@@ -276,7 +276,6 @@ dependencies = [
     { name = "filetype" },
     { name = "pymupdf" },
     { name = "python-dateutil" },
-    { name = "typing-extensions" },
 ]
 
 [package.dev-dependencies]
@@ -324,7 +323,6 @@ requires-dist = [
     { name = "filetype", specifier = "~=1.2" },
     { name = "pymupdf", specifier = "~=1.24" },
     { name = "python-dateutil", specifier = "~=2.9" },
-    { name = "typing-extensions", specifier = "~=4.13" },
 ]
 
 [package.metadata.requires-dev]

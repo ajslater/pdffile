@@ -722,3 +722,25 @@ def test_read_pixmap_jpeg_format_always_returns_jpeg(vector_only: Path) -> None:
         pdf.close()
     assert props["ext"] == "jpeg"
     assert blob[:3] == b"\xff\xd8\xff"
+
+
+@pytest.mark.parametrize(
+    ("fmt", "ext"),
+    [
+        (PageFormat.PIXMAP_JPEG, "jpeg"),
+        (PageFormat.IMAGE_IF_DOMINANT, "pdf"),
+        (PageFormat.PDF, "pdf"),
+        ("", "pdf"),
+    ],
+)
+def test_read_dispatches_page_format_members(
+    vector_only: Path, fmt: str, ext: str
+) -> None:
+    """``PageFormat`` is a ``StrEnum``: members dispatch like their values."""
+    pdf = PDFFile(vector_only)
+    props: dict = {}
+    try:
+        pdf.read("0", fmt=fmt, props=props)
+    finally:
+        pdf.close()
+    assert props["ext"] == ext

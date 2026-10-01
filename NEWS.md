@@ -1,5 +1,12 @@
 # 📰 PDFFile News
 
+## v1.0.0 - Python 3.11
+
+- Require Python 3.11.
+- `PageFormat` and `PageMode` are now `StrEnum`s. Members are `str`s, so
+  `read(fmt=PageFormat.IMAGE)` works without `.value`; values are unchanged.
+- Drop the `typing-extensions` dependency.
+
 ## v0.6.3 - Rotate image-dominant pages correctrly
 
 - `PDFFile.read_pdf(index, index_to=None)` accepts an optional inclusive end
