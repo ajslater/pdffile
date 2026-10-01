@@ -7,12 +7,11 @@ from enum import Enum
 from logging import Logger, getLogger
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 from zipfile import ZipInfo
 
 from filetype import guess
 from pymupdf import Document, mupdf
-from typing_extensions import Self
 
 from pdffile._image_serve import (
     DEFAULT_PIXMAP_DPI,

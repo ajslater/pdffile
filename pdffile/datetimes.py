@@ -1,7 +1,7 @@
 """Convert PDF Date strings to datetime and timetuple."""
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from logging import Logger, getLogger
 
 from dateutil import parser
@@ -67,7 +67,7 @@ def pdf_date_to_datetime(pdf_date: str) -> datetime:
 
     sign = parts.get("tz")
     if sign == "Z":
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     elif sign in ("+", "-"):
         offset = timedelta(
             hours=int(parts.get("tz_hour", 0)),
@@ -87,7 +87,7 @@ def to_datetime(pdf_date: str) -> datetime | None:
     try:
         dttm = pdf_date_to_datetime(pdf_date)
         if not dttm.tzinfo:
-            dttm.replace(tzinfo=timezone.utc)
+            dttm.replace(tzinfo=UTC)
     except Exception as exc:
         dttm = None
         reason = f"Unable to parse PDF datetime {pdf_date}, using start of epoch: {exc}"
