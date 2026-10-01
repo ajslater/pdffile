@@ -5,7 +5,9 @@
 - Require Python 3.11.
 - `PageFormat` and `PageMode` are now `StrEnum`s. Members are `str`s, so
   `read(fmt=PageFormat.IMAGE)` works without `.value`; values are unchanged.
+- `to_datetime` returns UTC-aware datetimes for PDF dates without a timezone.
 - Drop the `typing-extensions` dependency.
+- Fix: parse PDF dates missing optional fields like the timezone.
 
 ## v0.6.3 - Rotate image-dominant pages correctrly
 
