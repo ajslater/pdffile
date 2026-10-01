@@ -9,7 +9,6 @@ from dateutil import parser
 LOG: Logger = getLogger(__name__)
 PDF_DATE_PREFIX = "D:"
 DEFAULT_DTTM_TUPLE: tuple[int, int, int, int, int, int] = (1980, 1, 1, 0, 0, 0)
-TZ_DELIMITERS = ("+", "-")
 # PDF date format: D:YYYY[MM[DD[HH[mm[SS[O[HH['mm']]]]]]]]
 PDF_DATE_NAIVE_TEMPLATE = "D:%Y%m%d%H%M%S"
 # All fields after YYYY are optional. The apostrophes around tz minutes are
@@ -91,7 +90,7 @@ def to_datetime(pdf_date: str) -> datetime | None:
             dttm = dttm.replace(tzinfo=UTC)
     except Exception as exc:
         dttm = None
-        reason = f"Unable to parse PDF datetime {pdf_date}, using start of epoch: {exc}"
+        reason = f"Unable to parse PDF datetime {pdf_date!r}: {exc}"
         LOG.warning(reason)
     return dttm
 
