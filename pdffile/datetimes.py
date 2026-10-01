@@ -10,9 +10,10 @@ LOG: Logger = getLogger(__name__)
 PDF_DATE_PREFIX = "D:"
 DEFAULT_DTTM_TUPLE: tuple[int, int, int, int, int, int] = (1980, 1, 1, 0, 0, 0)
 TZ_DELIMITERS = ("+", "-")
-# PDF date format: D:YYYYMMDDHHmmSSOHH'mm'
+# PDF date format: D:YYYY[MM[DD[HH[mm[SS[O[HH['mm']]]]]]]]
 PDF_DATE_NAIVE_TEMPLATE = "D:%Y%m%d%H%M%S"
-# All fields after YYYY are optional
+# All fields after YYYY are optional. The apostrophes around tz minutes are
+# tolerated when missing, as many producers omit one or both.
 PDF_DATE_REGEX = (
     r"^D:"
     r"(?P<year>\d{4})"
@@ -21,9 +22,9 @@ PDF_DATE_REGEX = (
     r"(?P<hour>\d{2})?"
     r"(?P<minute>\d{2})?"
     r"(?P<second>\d{2})?"
-    r"(?P<tz>[Z+-])?"
-    r"(?P<tz_hour>\d{2})?"
-    r"'(?P<tz_minute>\d{2})'?"
+    r"(?:(?P<tz>[Z+-])"
+    r"(?:(?P<tz_hour>\d{2})'?"
+    r"(?:(?P<tz_minute>\d{2})'?)?)?)?"
     r"$"
 )
 PDF_DATE_RE = re.compile(PDF_DATE_REGEX)
@@ -87,7 +88,7 @@ def to_datetime(pdf_date: str) -> datetime | None:
     try:
         dttm = pdf_date_to_datetime(pdf_date)
         if not dttm.tzinfo:
-            dttm.replace(tzinfo=UTC)
+            dttm = dttm.replace(tzinfo=UTC)
     except Exception as exc:
         dttm = None
         reason = f"Unable to parse PDF datetime {pdf_date}, using start of epoch: {exc}"
@@ -130,12 +131,9 @@ def to_zipinfo_timetuple(
     value: str | datetime,
 ) -> tuple[int, int, int, int, int, int]:
     """Convert a pdf_date to a ZipInfo time tuple."""
-    try:
-        dttm = value if isinstance(value, datetime) else to_datetime(value)
-        dttm_tuple = dttm.timetuple()[:6]  # pyright: ignore[reportOptionalMemberAccess], #ty: ignore[unresolved-attribute]
-    except Exception as exc:
-        dttm_tuple = DEFAULT_DTTM_TUPLE
-        reason = f"Unable to convert pdf datetime {value} to ZipInfo timetuple, using default. {exc}."
+    dttm = value if isinstance(value, datetime) else to_datetime(value)
+    if dttm is None:
+        reason = f"Unable to convert pdf datetime {value!r} to ZipInfo timetuple, using default."
         LOG.warning(reason)
-
-    return dttm_tuple
+        return DEFAULT_DTTM_TUPLE
+    return dttm.year, dttm.month, dttm.day, dttm.hour, dttm.minute, dttm.second
