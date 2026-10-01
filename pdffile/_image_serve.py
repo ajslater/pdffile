@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from logging import getLogger
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
@@ -82,7 +82,7 @@ MIN_DPI_BBOX_FRACTION: Final[float] = 0.001
 # ── Public types ──────────────────────────────────────────────────
 
 
-class PageMode(Enum):
+class PageMode(StrEnum):
     """How a page should be served."""
 
     #: Embedded image bytes are browser-renderable as-stored.
