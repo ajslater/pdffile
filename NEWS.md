@@ -1,5 +1,10 @@
 # 📰 PDFFile News
 
+## v1.0.1
+
+- Dependencies
+    - Requires python-dateutil 3.0 and pymupdf 1.28.2.
+
 ## v1.0.0 - Python 3.11
 
 - Require Python 3.11.
