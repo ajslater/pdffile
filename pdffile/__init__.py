@@ -158,7 +158,7 @@ class PDFFile:
 
     def close(self) -> None:
         """
-        Close the fitz doc, saving only if the caller wrote to it.
+        Close the MuPDF doc, saving only if the caller wrote to it.
 
         Deliberately keyed on the explicit ``_modified`` flag rather
         than ``Document.is_dirty``: MuPDF marks a doc dirty when it

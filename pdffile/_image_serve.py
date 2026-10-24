@@ -382,14 +382,16 @@ def extract_full_pixmap_jpeg(
     ``dpi=None`` (default) picks a render DPI from the page's
     embedded-image resolution (see :func:`choose_pixmap_dpi`); pages
     with no images render at :data:`DEFAULT_PIXMAP_DPI`. Pass an
-    integer to override.
+    integer to override. The JPEG records the render DPI in its JFIF
+    header.
     """
     try:
         page = doc.load_page(index)
         chosen_dpi = dpi if dpi is not None else choose_pixmap_dpi(page)
-        zoom = chosen_dpi / 72.0
-        matrix = pymupdf.Matrix(zoom, zoom)
-        pix = page.get_pixmap(matrix=matrix)
+        # ``dpi=`` scales exactly like a ``Matrix(dpi / 72)`` zoom and
+        # also stamps the resolution on the pixmap, so the JPEG's JFIF
+        # density matches the render instead of MuPDF's 96 dpi default.
+        pix = page.get_pixmap(dpi=chosen_dpi)
         if pix.colorspace and pix.colorspace.n not in BROWSER_NATIVE_COLORSPACES:
             pix = pymupdf.Pixmap(pymupdf.csRGB, pix)
         blob = pix.tobytes("jpeg")
