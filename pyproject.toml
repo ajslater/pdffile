@@ -5,7 +5,7 @@ classifiers = [
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3 :: Only",
 ]
-dependencies = ["filetype~=1.2", "pymupdf~=2.0", "python-dateutil~=3.0"]
+dependencies = ["filetype~=1.2", "pymupdf~=1.28.2", "python-dateutil~=3.0"]
 description = "A ZipFile like API for PyMuPDF"
 keywords = ["pdf", "zipfile"]
 readme = "README.md"
