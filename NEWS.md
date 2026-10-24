@@ -1,5 +1,22 @@
 # 📰 PDFFile News
 
+## v1.1.0 - PyMuPDF Lite
+
+- Depend on `pymupdf-lite` 2.0 instead of `pymupdf` 1.28. Lite is PyMuPDF 2.0
+  (MuPDF 1.28.5) without the layout-analysis engine, so PDFFile does not pull in
+  the roughly 160 MB ONNX stack (`onnxruntime`, `numpy`, `pymupdf-layout`,
+  `pymupdf4llm` and friends) that full `pymupdf` 2.0 requires. It provides the
+  same `import pymupdf` API.
+- `pymupdf` and `pymupdf-lite` install the same files. Never install both in one
+  environment. The README shows how to use full `pymupdf` instead.
+- Fixes inherited from PyMuPDF 2.0: `read_pdf` no longer raises `ValueError` on
+  pages whose form widgets have a `/Parent` that does not list them in `/Kids`;
+  rendering tagged PDFs with many marked-content ids is no longer quadratic; a
+  1.28.x hang at 100% CPU on some files is gone.
+- Full-page JPEG renders (`read_full_pixmap_jpeg`, `PageFormat.PIXMAP_JPEG`, and
+  rotated image-dominant pages) now record the render DPI in the JFIF header
+  instead of MuPDF's 96 dpi default. Pixels are unchanged; the bytes differ.
+
 ## v1.0.1
 
 - Dependencies

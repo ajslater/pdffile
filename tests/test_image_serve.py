@@ -678,6 +678,7 @@ def test_read_full_pixmap_jpeg_explicit_dpi_overrides_cheap_path(
     assert ext == "jpeg"
     img = Image.open(io.BytesIO(blob))
     assert img.size == _DPI_72_SIZE, f"dpi=72 ignored, got {img.size}"
+    assert img.info["dpi"] == (72, 72), f"JFIF density not stamped: {img.info}"
     top, bottom = _top_bottom_colors(blob)
     assert _is_bluish(top)
     assert _is_reddish(bottom)
