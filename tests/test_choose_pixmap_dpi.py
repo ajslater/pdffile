@@ -299,6 +299,9 @@ def test_read_full_pixmap_explicit_dpi_overrides_auto(
     large_img = Image.open(io.BytesIO(large))
     assert small_img.size[0] < large_img.size[0]
     assert small_img.size[1] < large_img.size[1]
+    # The JFIF header records the render DPI, not MuPDF's 96 dpi default.
+    assert small_img.info["dpi"] == (72, 72)
+    assert large_img.info["dpi"] == (300, 300)
 
 
 def test_read_full_pixmap_dpi_none_uses_auto(vector_text_page: Path) -> None:
@@ -315,3 +318,4 @@ def test_read_full_pixmap_dpi_none_uses_auto(vector_text_page: Path) -> None:
     auto_img = Image.open(io.BytesIO(auto_blob))
     explicit_img = Image.open(io.BytesIO(explicit_blob))
     assert auto_img.size == explicit_img.size
+    assert auto_img.info["dpi"] == (DEFAULT_PIXMAP_DPI, DEFAULT_PIXMAP_DPI)
