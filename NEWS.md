@@ -2,47 +2,72 @@
 
 ## v1.1.0 - PyMuPDF Lite
 
+### 💥 Breaking Changes
+
+- `pymupdf` and `pymupdf-lite` install the same files. Never install both in one
+  environment. The README shows how to use full `pymupdf` instead.
+
+### ♻️ Changed
+
 - Depend on `pymupdf-lite` 2.0 instead of `pymupdf` 1.28. Lite is PyMuPDF 2.0
   (MuPDF 1.28.5) without the layout-analysis engine, so PDFFile does not pull in
   the roughly 160 MB ONNX stack (`onnxruntime`, `numpy`, `pymupdf-layout`,
   `pymupdf4llm` and friends) that full `pymupdf` 2.0 requires. It provides the
   same `import pymupdf` API.
-- `pymupdf` and `pymupdf-lite` install the same files. Never install both in one
-  environment. The README shows how to use full `pymupdf` instead.
-- Fixes inherited from PyMuPDF 2.0: `read_pdf` no longer raises `ValueError` on
-  pages whose form widgets have a `/Parent` that does not list them in `/Kids`;
-  rendering tagged PDFs with many marked-content ids is no longer quadratic; a
-  1.28.x hang at 100% CPU on some files is gone.
 - Full-page JPEG renders (`read_full_pixmap_jpeg`, `PageFormat.PIXMAP_JPEG`, and
   rotated image-dominant pages) now record the render DPI in the JFIF header
   instead of MuPDF's 96 dpi default. Pixels are unchanged; the bytes differ.
 
+### 🐛 Fixed
+
+- Fixes inherited from PyMuPDF 2.0: `read_pdf` no longer raises `ValueError` on
+  pages whose form widgets have a `/Parent` that does not list them in `/Kids`;
+  rendering tagged PDFs with many marked-content ids is no longer quadratic; a
+  1.28.x hang at 100% CPU on some files is gone.
+
 ## v1.0.1
 
-- Dependencies
-    - Requires python-dateutil 3.0 and pymupdf 1.28.2.
+### 🧑‍💻 Developer
+
+- Requires python-dateutil 3.0 and pymupdf 1.28.2.
 
 ## v1.0.0 - Python 3.11
 
+### 💥 Breaking Changes
+
 - Require Python 3.11.
+- `to_datetime` returns UTC-aware datetimes for PDF dates without a timezone.
+
+### ♻️ Changed
+
 - `PageFormat` and `PageMode` are now `StrEnum`s. Members are `str`s, so
   `read(fmt=PageFormat.IMAGE)` works without `.value`; values are unchanged.
-- `to_datetime` returns UTC-aware datetimes for PDF dates without a timezone.
-- Drop the `typing-extensions` dependency.
+
+### 🐛 Fixed
+
 - Fix: parse PDF dates missing optional fields like the timezone.
 
+### 🧑‍💻 Developer
+
+- Drop the `typing-extensions` dependency.
+
 ## v0.6.3 - Rotate image-dominant pages correctrly
+
+### ✨ Added
 
 - `PDFFile.read_pdf(index, index_to=None)` accepts an optional inclusive end
   page and returns one multi-page pdf spanning the range. Single argument calls
   are byte identical to before. An `index_to` before `index` raises `ValueError`
   rather than silently reversing the page order.
+- `PageVerdict` gains `page_index` and `rotation` fields.
+
+### 🐛 Fixed
+
 - Fix: `read_image_if_dominant` / `read_full_pixmap_jpeg` returned the embedded
   image _as stored_ for pages with a `/Rotate` attribute, so scans stored
   inverted (common scanner output relying on `/Rotate 180` for display) were
   served upside down. Rotated `IMAGE_TRANSCODE` verdicts now re-render the whole
   page — which applies `/Rotate` — instead of decoding the bare image xref.
-- `PageVerdict` gains `page_index` and `rotation` fields.
 - Fix: `close()` saved the document whenever MuPDF marked it dirty — and MuPDF
   does that when it repairs malformed content streams in memory during read
   operations (`get_text` / `get_drawings`, both used by `classify_page`), so a
@@ -63,9 +88,13 @@
 
 ## v0.6.2
 
+### 🔒 Security
+
 - Security release for dependencies.
 
 ## v0.6.1 - Auto-DPI for full-page rasterization
+
+### ✨ Added
 
 - New `choose_pixmap_dpi(page)` picks a render DPI matching the page's
   embedded-image resolution. Walks each image, computes its native placed DPI
@@ -73,48 +102,58 @@
   `[DEFAULT_PIXMAP_DPI, MAX_PIXMAP_DPI]` (150–300). Pages with no images return
   the default. Tiny tracking pixels and decorative dots are filtered via
   `min_bbox_fraction`.
+- New module-level constants `DEFAULT_PIXMAP_DPI = 150` and
+  `MAX_PIXMAP_DPI = 300`.
+
+### ♻️ Changed
+
 - `PDFFile.read_full_pixmap_jpeg(index, dpi=None)` now defaults to the
   auto-picked DPI; pass an integer to override. Existing callers see slightly
   higher rendering quality on multi-image pages and a consistent 150 DPI floor
   on pure vector pages — comic-resolution output by default instead of the
   previous 72 DPI.
-- New module-level constants `DEFAULT_PIXMAP_DPI = 150` and
-  `MAX_PIXMAP_DPI = 300`.
 
 ## v0.6.0 - Image-dominant page detection
 
-- Features
-    - New `PDFFile.classify_page(index)` returns a `PageVerdict` describing how
-      the page should be served: `IMAGE_DIRECT` (embedded image is browser-safe
-      as-stored), `IMAGE_TRANSCODE` (embedded image needs RGB-JPEG re-encoding —
-      CMYK, JBIG2, JPEG 2000, rotated pages), or `PDF_FALLBACK` (page has vector
-      content; serve through the PDF path). Detection runs on parsed metadata —
-      no rasterization — and costs single-digit milliseconds per page.
-    - New `PDFFile.read_image_if_dominant(index)` returns `(bytes, ext)` for
-      image-dominant pages or `None` for fall-through, letting browser readers
-      serve comic-style PDFs as plain `<img>` instead of going through pdf.js.
-    - New `PDFFile.read_full_pixmap_jpeg(index)` renders any page to RGB JPEG
-      for callers that need an always-image response.
-    - New `PageFormat.IMAGE_IF_DOMINANT` and `PageFormat.PIXMAP_JPEG` values for
-      the `read()` interface.
+### ✨ Added
 
-- Fixes
-    - `read_pdf` passes `no_new_id=True` to `tobytes()` so single-page PDF
-      output is deterministic across calls. Without this, pymupdf stamps a fresh
-      random `/ID` array on every save and byte-equality fixtures break on every
-      run.
+- New `PDFFile.classify_page(index)` returns a `PageVerdict` describing how the
+  page should be served: `IMAGE_DIRECT` (embedded image is browser-safe
+  as-stored), `IMAGE_TRANSCODE` (embedded image needs RGB-JPEG re-encoding —
+  CMYK, JBIG2, JPEG 2000, rotated pages), or `PDF_FALLBACK` (page has vector
+  content; serve through the PDF path). Detection runs on parsed metadata — no
+  rasterization — and costs single-digit milliseconds per page.
+- New `PDFFile.read_image_if_dominant(index)` returns `(bytes, ext)` for
+  image-dominant pages or `None` for fall-through, letting browser readers serve
+  comic-style PDFs as plain `<img>` instead of going through pdf.js.
+- New `PDFFile.read_full_pixmap_jpeg(index)` renders any page to RGB JPEG for
+  callers that need an always-image response.
+- New `PageFormat.IMAGE_IF_DOMINANT` and `PageFormat.PIXMAP_JPEG` values for the
+  `read()` interface.
+
+### 🐛 Fixed
+
+- `read_pdf` passes `no_new_id=True` to `tobytes()` so single-page PDF output is
+  deterministic across calls. Without this, pymupdf stamps a fresh random `/ID`
+  array on every save and byte-equality fixtures break on every run.
 
 ## v0.5.1
+
+### 🐛 Fixed
 
 - Extract PDF pages as originals rather than recomposing them. Fixes a bug where
   OCR text became visible.
 
 ## v0.5.0
 
+### 🧑‍💻 Developer
+
 - Refactor all datetime processing and move to a utility file.
 - API unchanged.
 
 ## v0.4.1
+
+### 🐛 Fixed
 
 - Fix reading PDF metadata breaking on datetimes.
 - Unreadable or unconvertible PDF datetimes are substituted with the start of
@@ -122,6 +161,8 @@
   parsing.
 
 ## v0.4.0 - Extract unaltered images
+
+### ✨ Added
 
 - read() also extract original image files. Format now specified with an string.
   File extension passed back in an optional props dict.
@@ -133,6 +174,8 @@
 
 ## v0.3.0 - Embedded File Support
 
+### ✨ Added
+
 - namelist() lists embedded files.
 - infolist() lists embedded files.
 - read() can also read named embedded files.
@@ -142,54 +185,81 @@
 
 ## v0.2.5
 
+### ♻️ Changed
+
 - Save with object streams compression instead of linear format.
 
 ## v0.2.4
+
+### 🐛 Fixed
 
 - Parse timezone naive PDF datetimes.
 
 ## v0.2.3
 
+### ✨ Added
+
 - Automatically converts pdf datestrings to python datetimes and back.
 - Automatically converts pdf/xml bool string to python bools and back
 - PDFFile static methods to\_datetime, to\_pdf\_date, and to\_bool and
   to\_xml\_bool do this manually.
+
+### ♻️ Changed
+
 - Deflate images on save.
 
 ## v0.2.0-0.2.2 - Yanked
 
 ## v0.1.8
 
+### 🧑‍💻 Developer
+
 - Build with circleci
 
 ## v0.1.7
+
+### 🔒 Security
 
 - Dependency security update
 
 ## v0.1.6
 
+### 🧑‍💻 Developer
+
 - pymupdf 1.24.0
 
 ## v0.1.5
+
+### ✨ Added
 
 - Support Python 3.9
 
 ## v0.1.4
 
+### 💥 Breaking Changes
+
 - Require Python 3.10
 
 ## v0.1.3
+
+### ♻️ Changed
 
 - Documentation changes
 
 ## v0.1.2
 
+### 🐛 Fixed
+
 - Fix bad reference to new\_fitz as it's the default now.
 
 ## v0.1.1
 
+### 🧑‍💻 Developer
+
 - Fix up packaging and tests. No functional changes.
 
 ## v0.1.0
+
+### ✨ Added
 
 - A ZipFile like API for muPDF
