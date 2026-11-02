@@ -1,5 +1,11 @@
 # 📰 PDFFile News
 
+## v1.1.1
+
+### 🧑 Developer
+
+- Depends on python-dateutil 4.0
+
 ## v1.1.0 - PyMuPDF Lite
 
 ### 💥 Breaking Changes
