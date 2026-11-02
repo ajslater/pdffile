@@ -5,14 +5,14 @@ classifiers = [
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3 :: Only",
 ]
-dependencies = ["filetype~=1.2", "pymupdf-lite~=2.0", "python-dateutil~=3.0"]
+dependencies = ["filetype~=1.2", "pymupdf-lite~=2.0", "python-dateutil~=4.0"]
 description = "A ZipFile like API for PyMuPDF"
 keywords = ["pdf", "zipfile"]
 readme = "README.md"
 requires-python = ">=3.11"
 license = "GPL-3.0-only"
 name = "comicbox-pdffile"
-version = "1.1.0"
+version = "1.1.1"
 
 [[project.authors]]
 name = "AJ Slater"
