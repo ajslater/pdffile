@@ -2,7 +2,7 @@
 
 ## v1.1.1
 
-### 🧑 Developer
+### 🧑‍💻 Developer
 
 - Depends on python-dateutil 4.0
 
@@ -10,8 +10,10 @@
 
 ### 💥 Breaking Changes
 
-- `pymupdf` and `pymupdf-lite` install the same files. Never install both in one
-  environment. The README shows how to use full `pymupdf` instead.
+> [!WARNING]
+>
+> - `pymupdf` and `pymupdf-lite` install the same files. Never install both in
+>   one environment. The README shows how to use full `pymupdf` instead.
 
 ### ♻️ Changed
 
@@ -41,8 +43,10 @@
 
 ### 💥 Breaking Changes
 
-- Require Python 3.11.
-- `to_datetime` returns UTC-aware datetimes for PDF dates without a timezone.
+> [!WARNING]
+>
+> - Require Python 3.11.
+> - `to_datetime` returns UTC-aware datetimes for PDF dates without a timezone.
 
 ### ♻️ Changed
 
@@ -216,6 +220,10 @@
 
 ## v0.2.0-0.2.2 - Yanked
 
+> [!CAUTION]
+>
+> Writing metadata crashes. Use v0.2.3.
+
 ## v0.1.8
 
 ### 🧑‍💻 Developer
@@ -244,7 +252,9 @@
 
 ### 💥 Breaking Changes
 
-- Require Python 3.10
+> [!WARNING]
+>
+> - Require Python 3.10
 
 ## v0.1.3
 
