@@ -28,8 +28,10 @@ toolchain. See the
 
 ### Full PyMuPDF
 
-`pymupdf` and `pymupdf-lite` install the same files. Never install both in one
-environment; uninstalling either breaks the other.
+> [!WARNING]
+>
+> `pymupdf` and `pymupdf-lite` install the same files. Never install both in one
+> environment; uninstalling either breaks the other.
 
 If something else in your environment needs the full `pymupdf` package, install
 it in place of `pymupdf-lite`. With uv, drop `pymupdf-lite` from the dependency
