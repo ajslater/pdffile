@@ -1,5 +1,11 @@
 # 📰 PDFFile News
 
+## v1.1.2
+
+### ♻️ Changed
+
+- Change docs to use Zensical instead of mkDocs.
+
 ## v1.1.1
 
 ### 🧑‍💻 Developer
